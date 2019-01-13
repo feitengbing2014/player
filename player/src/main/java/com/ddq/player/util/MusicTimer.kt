@@ -2,13 +2,13 @@ package com.ddq.player.util
 
 import android.content.Intent
 import com.ddq.player.Commands
-import com.ddq.player.MusicService
+import com.ddq.player.MediaService
 import java.util.*
 
 /**
  * created by dongdaqing 19-1-11 下午3:26
  */
-class MusicTimer(service: MusicService, millsInFuture: Long, pending: Queue<Intent>?) : Timer(millsInFuture, 500) {
+class MusicTimer(service: MediaService, millsInFuture: Long, pending: Queue<Intent>?) : Timer(millsInFuture, 500) {
 
     private val mService = service
     private val mPendingAction = pending

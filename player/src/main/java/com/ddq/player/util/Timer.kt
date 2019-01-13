@@ -6,6 +6,7 @@ import android.os.SystemClock
 
 /**
  * created by dongdaqing 19-1-11 下午2:40
+ *
  */
 abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
     /**

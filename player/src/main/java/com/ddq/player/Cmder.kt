@@ -9,19 +9,24 @@ import android.content.IntentFilter
  * created by dongdaqing 19-1-11 下午2:16
  * 用来处理各项广播事件
  */
-class Cmder(musicService: MusicService) : BroadcastReceiver() {
+class Cmder(mediaService: MediaService) : BroadcastReceiver() {
 
-    private val service: MusicService = musicService
+    private val service: MediaService = mediaService
 
     fun register() {
         val filter = IntentFilter()
         with(filter) {
             addAction(Commands.SET_PLAYER_TARGET)
             addAction(Commands.SET_COUNTDOWN_TIMER)
+            addAction(Commands.SET_REPEAT_MODE)
+
+            addAction(Commands.SET_PLAYER_PAUSE)
+            addAction(Commands.SET_PLAYER_PLAY)
+            addAction(Commands.SET_PLAYER_STOP)
 
             addAction(Commands.QUERY_TIMELINE_POSITION)
             addAction(Commands.QUERY_TRACK_INFO)
-            addAction(Commands.QUERY_PLAYSTATE)
+            addAction(Commands.QUERY_PLAY_STATE)
             addAction(Commands.QUERY_REPEAT_MODE)
             addAction(Commands.QUERY_COUNTDOWN_TIMER)
         }
@@ -35,11 +40,17 @@ class Cmder(musicService: MusicService) : BroadcastReceiver() {
         when (intent?.action) {
             Commands.SET_COUNTDOWN_TIMER -> service.setTimer(intent)
             Commands.SET_PLAYER_TARGET -> service.setPlayerTarget(intent)
+            Commands.SET_REPEAT_MODE -> service.setRepeatMode(intent)
+
             Commands.QUERY_TIMELINE_POSITION -> queryTimeLinePosition()
             Commands.QUERY_TRACK_INFO -> queryTrackInfo()
-            Commands.QUERY_PLAYSTATE -> queryPlayState()
+            Commands.QUERY_PLAY_STATE -> queryPlayState()
             Commands.QUERY_REPEAT_MODE -> queryRepeatMode()
             Commands.QUERY_COUNTDOWN_TIMER -> queryCountdownTimer()
+
+            Commands.SET_PLAYER_PLAY -> service.play(intent)
+            Commands.SET_PLAYER_PAUSE -> service.pause()
+            Commands.SET_PLAYER_STOP -> service.stop()
         }
     }
 
