@@ -9,20 +9,20 @@ import android.content.IntentFilter
  * created by dongdaqing 19-1-11 下午2:16
  * 用来处理各项广播事件
  */
-class Cmder(mediaService: MediaService) : BroadcastReceiver() {
-
-    private val service: MediaService = mediaService
+class Cmder(private val service: MediaService) : BroadcastReceiver() {
 
     fun register() {
         val filter = IntentFilter()
         with(filter) {
-            addAction(Commands.SET_PLAYER_TARGET)
             addAction(Commands.SET_COUNTDOWN_TIMER)
             addAction(Commands.SET_REPEAT_MODE)
 
             addAction(Commands.SET_PLAYER_PAUSE)
             addAction(Commands.SET_PLAYER_PLAY)
             addAction(Commands.SET_PLAYER_STOP)
+            addAction(Commands.SET_PLAYER_PLAY_OR_PAUSE)
+            addAction(Commands.SET_PLAYER_PREVIOUS)
+            addAction(Commands.SET_PLAYER_NEXT)
 
             addAction(Commands.QUERY_TIMELINE_POSITION)
             addAction(Commands.QUERY_TRACK_INFO)
@@ -39,7 +39,6 @@ class Cmder(mediaService: MediaService) : BroadcastReceiver() {
     fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {
             Commands.SET_COUNTDOWN_TIMER -> service.setTimer(intent)
-            Commands.SET_PLAYER_TARGET -> service.setPlayerTarget(intent)
             Commands.SET_REPEAT_MODE -> service.setRepeatMode(intent)
 
             Commands.QUERY_TIMELINE_POSITION -> queryTimeLinePosition()
@@ -51,6 +50,9 @@ class Cmder(mediaService: MediaService) : BroadcastReceiver() {
             Commands.SET_PLAYER_PLAY -> service.play(intent)
             Commands.SET_PLAYER_PAUSE -> service.pause()
             Commands.SET_PLAYER_STOP -> service.stop()
+            Commands.SET_PLAYER_PLAY_OR_PAUSE -> service.playOrPause()
+            Commands.SET_PLAYER_PREVIOUS -> service.previous()
+            Commands.SET_PLAYER_NEXT -> service.next()
         }
     }
 

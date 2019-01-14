@@ -8,18 +8,16 @@ import java.util.*
 /**
  * created by dongdaqing 19-1-11 下午3:26
  */
-class MusicTimer(service: MediaService, millsInFuture: Long, pending: Queue<Intent>?) : Timer(millsInFuture, 500) {
-
-    private val mService = service
-    private val mPendingAction = pending
+class MusicTimer(private val service: MediaService, millsInFuture: Long, private val pending: Queue<Intent>?) :
+    Timer(millsInFuture, 500) {
 
     override
     fun onTick(millisUntilFinished: Long) {
-        if (mPendingAction != null && mPendingAction.size > 0) {
-            val fireTime = mPendingAction.peek().getIntExtra("fire", 0).toLong()
+        if (pending != null && pending.size > 0) {
+            val fireTime = pending.peek().getIntExtra("fire", 0).toLong()
 
             if (fireTime >= millisUntilFinished) {
-                sendBroadcast(mPendingAction.poll())
+                sendBroadcast(pending.poll())
             }
         }
 
@@ -33,8 +31,8 @@ class MusicTimer(service: MediaService, millsInFuture: Long, pending: Queue<Inte
     private fun sendCountBroadcast(left: Long) {
         val intent = Intent(Commands.ACTION_COUNTING)
         intent.putExtra("seconds_left", left)
-        mService.sendBroadcast(intent)
+        service.sendBroadcast(intent)
     }
 
-    private fun sendBroadcast(intent: Intent) = mService.sendBroadcast(intent)
+    private fun sendBroadcast(intent: Intent) = service.sendBroadcast(intent)
 }

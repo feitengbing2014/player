@@ -28,7 +28,7 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
 
     private var mPaused = true
 
-    private var millisLeft: Long = 0
+    private var millisLeft: Long = millisInFuture
 
     /**
      * Cancel the countdown.
@@ -65,7 +65,6 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
             onFinish()
             return this
         }
-        millisLeft = mMillisInFuture
         mStopTimeInFuture = SystemClock.elapsedRealtime() + mMillisInFuture
         mHandler.sendMessage(mHandler.obtainMessage(MSG))
         return this

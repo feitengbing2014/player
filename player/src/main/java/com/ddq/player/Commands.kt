@@ -16,14 +16,16 @@ class Commands {
         const val ACTION_COUNTING = "ddq.player.action.counting"//正在倒计时
 
         //设置参数
-        const val SET_PLAYER_TARGET = "ddq.player.set.player_target" //设置点击状态栏的跳转目标界面
         const val SET_COUNTDOWN_TIMER = "ddq.player.set.countdown_timer" //设置定时器
         const val SET_REPEAT_MODE = "ddq.player.set.repeat_mode" //设置播放模式
 
-        //播放器动作
-        const val SET_PLAYER_PLAY ="ddq.player.play"//开始播放
-        const val SET_PLAYER_PAUSE ="ddq.player.pause"//暂停播放
-        const val SET_PLAYER_STOP ="ddq.player.stop"//停止播放
+        //播放器动作控制
+        const val SET_PLAYER_PLAY = "ddq.player.play"//开始播放
+        const val SET_PLAYER_PAUSE = "ddq.player.pause"//暂停播放
+        const val SET_PLAYER_STOP = "ddq.player.stop"//停止播放
+        const val SET_PLAYER_PREVIOUS = "ddq.player.previous"
+        const val SET_PLAYER_NEXT = "ddq.player.next"
+        const val SET_PLAYER_PLAY_OR_PAUSE = "ddq.player.play_or_pause"//（暂停状态下）开始或者（播放状态下）暂停
 
         //查询参数(查询相关状态，返回相应的内容)
         const val QUERY_TIMELINE_POSITION = "ddq.player.query.timeline"

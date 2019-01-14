@@ -44,7 +44,6 @@
             android:layout_height="match_parent"
             android:layout_gravity="center_vertical"
             android:scaleType="centerInside"
-            android:padding="9dp"
             android:src="@drawable/note_btn_pause"/>
 
     <ImageView

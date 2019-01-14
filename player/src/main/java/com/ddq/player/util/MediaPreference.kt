@@ -7,7 +7,7 @@ import android.content.Context
 */
 class MediaPreference {
     companion object {
-        const val PREFERENCE = "player.preference"
+        private const val PREFERENCE = "player.preference"
 
         fun setNotificationSmallIcon(context: Context, icon: Int) {
             val editor = context.getSharedPreferences(PREFERENCE, Context.MODE_PRIVATE).edit()
