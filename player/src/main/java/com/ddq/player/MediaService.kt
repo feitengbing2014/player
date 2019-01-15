@@ -8,10 +8,7 @@ import android.graphics.Bitmap
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
-import com.ddq.player.data.MediaInfo
-import com.ddq.player.data.TimerAction
-import com.ddq.player.data.toMediaSource
-import com.ddq.player.data.toPendingActions
+import com.ddq.player.data.*
 import com.ddq.player.util.MediaPreference
 import com.ddq.player.util.MediaTimer
 import com.ddq.player.util.ProgressChanged
@@ -79,7 +76,7 @@ class MediaService : Service() {
                 val media = mediaInfo as MediaInfo
                 val duration = player.duration
                 intent.putExtra("media", media)
-                intent.putExtra("duration", if (duration == 0L) media.duration else duration)
+                intent.putExtra("duration", if (duration > 0L) duration else media.duration)
                 sendBroadcast(intent)
             }
         }
@@ -277,7 +274,39 @@ class MediaService : Service() {
 
     fun play(intent: Intent?) {
         prepare(intent)
+        seekToWindow(intent)
         player.playWhenReady = true
+    }
+
+    fun remove(index: Int) {
+        mediaSource?.removeMediaSource(index)
+    }
+
+    /**
+     * prepare data to play
+     */
+    fun prepare(intent: Intent?) {
+        if (intent != null) {
+            @Suppress("UNCHECKED_CAST")
+            val medias = intent.getSerializableExtra("medias") as ArrayList<MediaInfo>?
+            prepare(medias)
+        }
+    }
+
+    fun prepare(medias: List<MediaInfo>?) {
+        if (medias != null) {
+            mediaSource = medias.toMediaSource(dataSourceFactory, mediaCompleteListener)
+            player.prepare(mediaSource)
+        }
+    }
+
+    fun seekToWindow(intent: Intent?) {
+        if (intent != null)
+            seekToWindow(intent.getIntExtra("position", 0))
+    }
+
+    fun seekToWindow(position: Int) {
+        player.seekToDefaultPosition(position)
     }
 
     fun pause() {
@@ -350,23 +379,9 @@ class MediaService : Service() {
     fun getCurrentMedia(): MediaInfo? {
         return player.currentTag as MediaInfo
     }
-//
-//    fun playlist(): List<MediaInfo>? {
-//        return mediaSource?.
-//    }
 
-    /**
-     * prepare data to play
-     */
-    private fun prepare(intent: Intent?) {
-        if (intent != null) {
-            @Suppress("UNCHECKED_CAST")
-            val medias = intent.getSerializableExtra("medias") as ArrayList<MediaInfo>?
-            if (medias != null) {
-                mediaSource = medias.toMediaSource(dataSourceFactory, mediaCompleteListener)
-                player.prepare(mediaSource)
-            }
-        }
+    fun playlist(): List<MediaInfo>? {
+        return mediaSource?.getMediaInfos()
     }
 
     inner class ServiceBinder : Binder() {

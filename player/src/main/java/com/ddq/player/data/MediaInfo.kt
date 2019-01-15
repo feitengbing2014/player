@@ -32,3 +32,12 @@ fun List<MediaInfo>.toMediaSource(dataSourceFactory: DataSource.Factory, runnabl
     }
     return source
 }
+
+fun ConcatenatingMediaSource.getMediaInfos(): List<MediaInfo> {
+    val count = size
+    val list = ArrayList<MediaInfo>(count)
+    for (i in 0..(count - 1)) {
+        list.add(getMediaSource(i).tag as MediaInfo)
+    }
+    return list
+}

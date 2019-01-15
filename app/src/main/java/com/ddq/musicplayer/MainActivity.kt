@@ -22,6 +22,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
+
     override fun onProgressChanged(played: Long, duration: Long) {
         media_played.text = played.toMediaTime()
         media_progress.progress = (played * 1000 / duration).toInt()
@@ -32,6 +33,20 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         val binder = service as MediaService.ServiceBinder
         mService = binder.getService()
+        val stream = assets.open("data.json")
+        val reader = BufferedReader(InputStreamReader(stream))
+        val builder = StringBuilder()
+        var line: String?
+        do {
+            line = reader.readLine()
+            if (line != null)
+                builder.append(line.trim())
+        } while (line != null)
+
+        val str = builder.toString()
+        val type = object : TypeToken<List<MediaInfo>>() {}.type
+        val list = Gson().fromJson<List<MediaInfo>>(str, type)
+        mService?.prepare(list)
         mService?.track(this)
     }
 
@@ -54,6 +69,13 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
 
         playing_next.setOnClickListener {
             next(it)
+        }
+
+        playlist.setOnClickListener {
+            val fragment = PlayListFragment()
+            fragment.list = mService?.playlist()
+            fragment.service = mService
+            fragment.show(supportFragmentManager, "play_list")
         }
 
         media_progress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -132,23 +154,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
             return
         }
 
-        val stream = assets.open("data.json")
-        val reader = BufferedReader(InputStreamReader(stream))
-        val builder = StringBuilder()
-        var line: String?
-        do {
-            line = reader.readLine()
-            if (line != null)
-                builder.append(line.trim())
-        } while (line != null)
-
-        val str = builder.toString()
-        val type = object : TypeToken<List<MediaInfo>>() {}.type
-        val list = Gson().fromJson<List<MediaInfo>>(str, type)
-
-        val intent = Intent(Commands.SET_PLAYER_PLAY)
-        intent.putExtra("medias", ArrayList(list))
-        mService!!.play(intent)
+        mService!!.play(null)
     }
 
     fun previous(view: View) {
