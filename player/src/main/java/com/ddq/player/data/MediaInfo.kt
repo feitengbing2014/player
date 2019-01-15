@@ -25,10 +25,10 @@ fun MediaInfo.toMediaSource(dataSourceFactory: DataSource.Factory) =
         .setTag(this)
         .createMediaSource(Uri.parse(uri))
 
-fun List<MediaInfo>.toMediaSource(dataSourceFactory: DataSource.Factory): ConcatenatingMediaSource {
+fun List<MediaInfo>.toMediaSource(dataSourceFactory: DataSource.Factory, runnable: Runnable): ConcatenatingMediaSource {
     val source = ConcatenatingMediaSource()
     forEach {
-        source.addMediaSource(it.toMediaSource(dataSourceFactory))
+        source.addMediaSource(it.toMediaSource(dataSourceFactory), runnable)
     }
     return source
 }

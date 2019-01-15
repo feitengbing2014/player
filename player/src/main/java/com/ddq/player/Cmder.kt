@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import com.google.android.exoplayer2.Player
 
 /**
  * created by dongdaqing 19-1-11 下午2:16
@@ -39,7 +40,7 @@ class Cmder(private val service: MediaService) : BroadcastReceiver() {
     fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {
             Commands.SET_COUNTDOWN_TIMER -> service.setTimer(intent)
-            Commands.SET_REPEAT_MODE -> service.setRepeatMode(intent)
+            Commands.SET_REPEAT_MODE -> service.setRepeatMode(intent.getIntExtra("repeat_mode", Player.REPEAT_MODE_OFF))
 
             Commands.QUERY_TIMELINE_POSITION -> queryTimeLinePosition()
             Commands.QUERY_TRACK_INFO -> queryTrackInfo()

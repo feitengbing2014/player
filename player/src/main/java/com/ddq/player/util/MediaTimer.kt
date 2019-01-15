@@ -8,8 +8,19 @@ import java.util.*
 /**
  * created by dongdaqing 19-1-11 下午3:26
  */
-class MusicTimer(private val service: MediaService, millsInFuture: Long, private val pending: Queue<Intent>?) :
-    Timer(millsInFuture, 500) {
+class MediaTimer(
+    private val service: MediaService,
+    private val pending: Queue<Intent>?,
+    private val type: Int,
+    millsInFuture: Long
+) : Timer(millsInFuture, 400) {
+
+    companion object {
+        const val TYPE_NORMAL = 1
+        const val TYPE_CURRENT = 2
+    }
+
+    fun isCountForCurrent(): Boolean = type == TYPE_CURRENT
 
     override
     fun onTick(millisUntilFinished: Long) {

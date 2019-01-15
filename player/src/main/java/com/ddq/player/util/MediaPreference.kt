@@ -1,6 +1,7 @@
 package com.ddq.player.util
 
 import android.content.Context
+import com.ddq.player.R
 
 /*
 * dongdaqing 2019/1/13 0013 21:17
@@ -17,7 +18,7 @@ class MediaPreference {
 
         fun getNotificationSmallIcon(context: Context): Int {
             val sp = context.getSharedPreferences(PREFERENCE, Context.MODE_PRIVATE)
-            return sp.getInt("n_s_i", -1)
+            return sp.getInt("n_s_i", R.drawable.exo_notification_small_icon)
         }
 
         fun setNotificationTargetPage(context: Context, string: String) {

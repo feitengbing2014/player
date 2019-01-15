@@ -13,9 +13,11 @@ import com.ddq.player.data.TimerAction
 import com.ddq.player.data.toMediaSource
 import com.ddq.player.data.toPendingActions
 import com.ddq.player.util.MediaPreference
-import com.ddq.player.util.MusicTimer
-import com.ddq.player.util.Timer
+import com.ddq.player.util.MediaTimer
+import com.ddq.player.util.ProgressChanged
+import com.ddq.player.util.ProgressTracker
 import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.Player.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
@@ -34,61 +36,116 @@ class MediaService : Service() {
         return ServiceBinder()
     }
 
-    private var timer: Timer? = null
+    private var timer: MediaTimer? = null
     private var mediaSource: ConcatenatingMediaSource? = null
+    private var tracker: ProgressTracker? = null
 
     private lateinit var musicNotification: MusicNotification
     private lateinit var playerNotificationManager: PlayerNotificationManager
     private lateinit var dataSourceFactory: DefaultDataSourceFactory
 
     private val cmder = Cmder(this)
+    private val mediaCompleteListener = Runnable {
+        /**
+         * timer is counting for current media
+         */
+        if (timer != null && timer!!.isCountForCurrent()) {
+            pause()
+        }
+    }
+
     private val listener = object : Player.EventListener {
         /******************************* callbacks ***********************/
 
         override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
-            Log.d("MediaService", "onTimelineChanged")
+            Log.d(
+                "MediaService", "onTimelineChanged:${
+                when (reason) {
+                    TIMELINE_CHANGE_REASON_PREPARED -> "TIMELINE_CHANGE_REASON_PREPARED"
+                    TIMELINE_CHANGE_REASON_RESET -> "TIMELINE_CHANGE_REASON_RESET"
+                    TIMELINE_CHANGE_REASON_DYNAMIC -> "TIMELINE_CHANGE_REASON_DYNAMIC"
+                    else -> "UNKNOWN"
+                }
+                }"
+            )
         }
 
         override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) {
-            Log.d("MediaService", "onTracksChanged")
+            Log.d("MediaService", "onTracksChanged,track info:${player.currentTag}")
+            val mediaInfo = player.currentTag
 
+            if (mediaInfo != null) {
+                val intent = Intent(Commands.ACTION_TRACK_CHANGED)
+                val media = mediaInfo as MediaInfo
+                val duration = player.duration
+                intent.putExtra("media", media)
+                intent.putExtra("duration", if (duration == 0L) media.duration else duration)
+                sendBroadcast(intent)
+            }
         }
 
         override fun onLoadingChanged(isLoading: Boolean) {
-            Log.d("MediaService", "onLoadingChanged:$isLoading")
+            Log.d(
+                "MediaService",
+                "onLoadingChanged:$isLoading,buffer:${player.bufferedPercentage}"
+            )
             val intent = Intent(Commands.ACTION_LOADING_CHANGED)
             intent.putExtra("loading", isLoading)
             sendBroadcast(intent)
         }
 
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            Log.d("MediaService", "onPlayerStateChanged:$playWhenReady,playbackState:$playbackState")
-            if (playWhenReady) {
+            Log.d(
+                "MediaService", "onPlayerStateChanged:$playWhenReady,playbackState:${
+                when (playbackState) {
+                    Player.STATE_IDLE -> "STATE_IDLE"
+                    Player.STATE_ENDED -> "STATE_ENDED"
+                    Player.STATE_BUFFERING -> "STATE_BUFFERING"
+                    Player.STATE_READY -> "STATE_READY"
+                    else -> "STATE_UNKNOWN"
+                }
+                }"
+            )
+            if (isPlaying()) {
                 timer?.resume()
             } else {
                 timer?.pause()
             }
 
             val intent = Intent(Commands.ACTION_PLAY_STATE_CHANGED)
-            intent.putExtra("play", playWhenReady)
+            intent.putExtra("play", isPlaying())
             sendBroadcast(intent)
         }
 
         override fun onRepeatModeChanged(repeatMode: Int) {
             Log.d("MediaService", "onRepeatModeChanged:$repeatMode")
             val intent = Intent(Commands.ACTION_REPEAT_MODE_CHANGED)
-            intent.putExtra("repeat_mode", repeatMode)
+            intent.putExtra("mode", repeatMode)
+            intent.putExtra("shuffle", player.shuffleModeEnabled)
             sendBroadcast(intent)
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
             Log.d("MediaService", "onShuffleModeEnabledChanged:$shuffleModeEnabled")
-
+            val intent = Intent(Commands.ACTION_REPEAT_MODE_CHANGED)
+            intent.putExtra("mode", player.repeatMode)
+            intent.putExtra("shuffle", shuffleModeEnabled)
+            sendBroadcast(intent)
         }
 
         override fun onPlayerError(error: ExoPlaybackException?) {
-            Log.e("MediaService", "onPlayerError:${error?.printStackTrace()}")
-
+            Log.e(
+                "MediaService", "onPlayerError:${
+                when (error?.type) {
+                    ExoPlaybackException.TYPE_SOURCE -> "TYPE_SOURCE"
+                    ExoPlaybackException.TYPE_RENDERER -> "TYPE_RENDERER"
+                    ExoPlaybackException.TYPE_UNEXPECTED -> "TYPE_UNEXPECTED"
+                    else -> {
+                        "TYPE_UNKNOWN"
+                    }
+                }
+                }"
+            )
         }
 
         override fun onPositionDiscontinuity(reason: Int) {
@@ -158,7 +215,13 @@ class MediaService : Service() {
             setSmallIcon(MediaPreference.getNotificationSmallIcon(this@MediaService))
         }
 
-        PlayerNotificationManager.createWithNotificationChannel(this, "com.ddq.player.media.NOW_PLAYING", R.string.app_name, 1, null)
+        PlayerNotificationManager.createWithNotificationChannel(
+            this,
+            "com.ddq.player.media.NOW_PLAYING",
+            R.string.app_name,
+            1,
+            null
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -169,6 +232,7 @@ class MediaService : Service() {
     }
 
     override fun onDestroy() {
+        Log.d("MediaService", "onDestroy")
         cmder.unregister()
         player.release()
         super.onDestroy()
@@ -180,7 +244,12 @@ class MediaService : Service() {
         @Suppress("UNCHECKED_CAST")
         val actions = intent.getSerializableExtra("actions") as List<TimerAction>?
 
-        timer = MusicTimer(this, intent.getLongExtra("mills", 0), actions?.toPendingActions())
+        timer = MediaTimer(
+            this,
+            actions?.toPendingActions(),
+            intent.getIntExtra("type", MediaTimer.TYPE_NORMAL),
+            intent.getLongExtra("mills", 0)
+        )
 
         if (player.playWhenReady) {
             timer?.start()
@@ -189,8 +258,12 @@ class MediaService : Service() {
         }
     }
 
-    fun setRepeatMode(intent: Intent) {
-        player.repeatMode = intent.getIntExtra("repeat_mode", Player.REPEAT_MODE_OFF)
+    fun setRepeatMode(mode: Int) {
+        player.repeatMode = mode
+    }
+
+    fun setShuffleModeEnable(enable: Boolean) {
+        player.shuffleModeEnabled = enable
     }
 
     /******************************* controls ***********************/
@@ -222,13 +295,65 @@ class MediaService : Service() {
         player.stop()
     }
 
-    fun isPlaying(): Boolean {
-        return player.playWhenReady
+    /**
+     * seek in range 0-1000
+     */
+    fun seekTo(percent: Int) {
+        var pc = percent
+        if (percent > 1000)
+            pc = 1000
+        else if (percent < 0)
+            pc = 0
+        player.seekTo(player.duration * pc / 1000)
     }
 
-    fun currentMedia(): MediaInfo? {
+    /**
+     * track progress
+     *
+     */
+    fun track(progressChanged: ProgressChanged) {
+        if (tracker != null)
+            throw RuntimeException("last tracker is not released")
+
+        tracker = ProgressTracker(player, progressChanged)
+        tracker?.track()
+    }
+
+    /**
+     * pause running tracker
+     *
+     * if u want to release tracker reference, use [unTrack] instead
+     */
+    fun pauseTracker() {
+        tracker!!.release()
+    }
+
+    /**
+     * resume stopped tracker
+     */
+    fun resumeTracker() {
+        tracker!!.track()
+    }
+
+    fun unTrack() {
+        tracker?.release()
+        tracker = null
+    }
+
+    fun isPlaying(): Boolean {
+        return player.playWhenReady && player.playbackState != Player.STATE_IDLE && player.playbackState != Player.STATE_ENDED
+    }
+
+    /**
+     * get current [MediaInfo] in player
+     */
+    fun getCurrentMedia(): MediaInfo? {
         return player.currentTag as MediaInfo
     }
+//
+//    fun playlist(): List<MediaInfo>? {
+//        return mediaSource?.
+//    }
 
     /**
      * prepare data to play
@@ -238,7 +363,7 @@ class MediaService : Service() {
             @Suppress("UNCHECKED_CAST")
             val medias = intent.getSerializableExtra("medias") as ArrayList<MediaInfo>?
             if (medias != null) {
-                mediaSource = medias.toMediaSource(dataSourceFactory)
+                mediaSource = medias.toMediaSource(dataSourceFactory, mediaCompleteListener)
                 player.prepare(mediaSource)
             }
         }
