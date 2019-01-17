@@ -1,44 +1,53 @@
 package com.ddq.player
 
-import android.app.PendingIntent
 import android.app.Service
-import android.content.ComponentName
 import android.content.Intent
-import android.graphics.Bitmap
-import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import com.ddq.player.data.*
-import com.ddq.player.util.MediaPreference
-import com.ddq.player.util.MediaTimer
-import com.ddq.player.util.ProgressChanged
-import com.ddq.player.util.ProgressTracker
+import com.ddq.player.util.*
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.Player.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
-import com.google.android.exoplayer2.ui.PlayerNotificationManager
-import com.google.android.exoplayer2.ui.PlayerNotificationManager.MediaDescriptionAdapter
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 
 /**
  * created by dongdaqing 19-1-11 下午1:46
+ *
+ * this service must start by calling Context#startService(packName,intent)
+ *
  */
-class MediaService : Service() {
+ class MediaService : Service(), Controls {
 
     override fun onBind(intent: Intent?): IBinder? {
-        return ServiceBinder()
+        return ServiceBinder(this)
+    }
+
+    private val preference: Preference by lazy {
+        Preference(this)
+    }
+
+    val playMode: Array<Int> by lazy {
+        preference.getPlayMode()
+    }
+
+    val targetPage: String? by lazy {
+        preference.getTargetPage()
+    }
+
+    val smallIcon: Int by lazy {
+        preference.getSmallIcon()
     }
 
     private var timer: MediaTimer? = null
     private var mediaSource: ConcatenatingMediaSource? = null
     private var tracker: ProgressTracker? = null
+    private var durationSeeker: DurationSeeker? = null
 
-    private lateinit var musicNotification: MusicNotification
-    private lateinit var playerNotificationManager: PlayerNotificationManager
     private lateinit var dataSourceFactory: DefaultDataSourceFactory
 
     private val cmder = Cmder(this)
@@ -46,6 +55,7 @@ class MediaService : Service() {
         /**
          * timer is counting for current media
          */
+        Log.d("MediaService", "mediaComplete:${timer?.type}")
         if (timer != null && timer!!.isCountForCurrent()) {
             pause()
         }
@@ -63,12 +73,18 @@ class MediaService : Service() {
                     TIMELINE_CHANGE_REASON_DYNAMIC -> "TIMELINE_CHANGE_REASON_DYNAMIC"
                     else -> "UNKNOWN"
                 }
-                }"
+                },duration ${player.duration}"
             )
+
+            //start timer
+            if (player.duration > 0) {
+                durationSeeker?.start()
+                durationSeeker = null
+            }
         }
 
         override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) {
-            Log.d("MediaService", "onTracksChanged,track info:${player.currentTag}")
+            Log.d("MediaService", "onTracksChanged, duration ${player.duration}")
             val mediaInfo = player.currentTag
 
             if (mediaInfo != null) {
@@ -79,16 +95,6 @@ class MediaService : Service() {
                 intent.putExtra("duration", if (duration > 0L) duration else media.duration)
                 sendBroadcast(intent)
             }
-        }
-
-        override fun onLoadingChanged(isLoading: Boolean) {
-            Log.d(
-                "MediaService",
-                "onLoadingChanged:$isLoading,buffer:${player.bufferedPercentage}"
-            )
-            val intent = Intent(Commands.ACTION_LOADING_CHANGED)
-            intent.putExtra("loading", isLoading)
-            sendBroadcast(intent)
         }
 
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
@@ -162,63 +168,19 @@ class MediaService : Service() {
         ExoPlayerFactory.newSimpleInstance(this).apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(listener)
-            musicNotification.player = this
-            playerNotificationManager.setPlayer(this)
         }
+    }
+
+    private val playerNotification: PlayerNotification by lazy {
+        PlayerNotification(this, player)
     }
 
     override fun onCreate() {
         super.onCreate()
         //注册事件处理器
         cmder.register()
-        musicNotification = MusicNotification(this)
+        playerNotification.startOrUpdateNotification()
         dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, packageName))
-        playerNotificationManager = PlayerNotificationManager(
-            this,
-            "com.ddq.player.media.NOW_PLAYING",
-            1,
-            object : MediaDescriptionAdapter {
-                override fun createCurrentContentIntent(player: Player?): PendingIntent? {
-                    val intent = Intent()
-                    val target = MediaPreference.getNotificationTargetPage(this@MediaService)
-                    if (target != null)
-                        intent.component = ComponentName(this@MediaService, target)
-                    return PendingIntent.getActivity(this@MediaService, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-                }
-
-                override fun getCurrentContentText(player: Player?): String? {
-                    if (player?.currentTag != null) {
-                        val mediaInfo = player.currentTag as MediaInfo
-                        return mediaInfo.mediaDesc
-                    }
-                    return null
-                }
-
-                override fun getCurrentContentTitle(player: Player?): String? {
-                    if (player?.currentTag != null) {
-                        val mediaInfo = player.currentTag as MediaInfo
-                        return mediaInfo.mediaName
-                    }
-                    return null
-                }
-
-                override fun getCurrentLargeIcon(
-                    player: Player?,
-                    callback: PlayerNotificationManager.BitmapCallback?
-                ): Bitmap? {
-                    return null
-                }
-            }).apply {
-            setSmallIcon(MediaPreference.getNotificationSmallIcon(this@MediaService))
-        }
-
-        PlayerNotificationManager.createWithNotificationChannel(
-            this,
-            "com.ddq.player.media.NOW_PLAYING",
-            R.string.app_name,
-            1,
-            null
-        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -231,11 +193,18 @@ class MediaService : Service() {
     override fun onDestroy() {
         Log.d("MediaService", "onDestroy")
         cmder.unregister()
+        stop()
         player.release()
         super.onDestroy()
     }
 
-    fun setTimer(intent: Intent) {
+    override fun setTimer(intent: Intent) {
+        val type = intent.getIntExtra("type", MediaTimer.TYPE_NORMAL)
+        if (type == MediaTimer.TYPE_CURRENT && player.duration <= 0) {
+            durationSeeker = DurationSeeker(intent, this)
+            return
+        }
+
         timer?.cancel()
 
         @Suppress("UNCHECKED_CAST")
@@ -244,14 +213,17 @@ class MediaService : Service() {
         timer = MediaTimer(
             this,
             actions?.toPendingActions(),
-            intent.getIntExtra("type", MediaTimer.TYPE_NORMAL),
-            intent.getLongExtra("mills", 0)
+            type,
+            if (type == MediaTimer.TYPE_CURRENT)
+                (player.duration - player.currentPosition)
+            else
+                intent.getLongExtra("mills", 0)
         )
 
-        if (player.playWhenReady) {
-            timer?.start()
+        if (isPlaying()) {
+            timer!!.start()
         } else {
-            timer?.pause()
+            timer!!.pause()
         }
     }
 
@@ -264,21 +236,28 @@ class MediaService : Service() {
     }
 
     /******************************* controls ***********************/
-    fun next() {
+    override fun next() {
         player.next()
     }
 
-    fun previous() {
+    override fun previous() {
         player.previous()
     }
 
+    /**
+     * start playing
+     *
+     */
     fun play(intent: Intent?) {
         prepare(intent)
         seekToWindow(intent)
         player.playWhenReady = true
     }
 
-    fun remove(index: Int) {
+    /**
+     * remove item from playlist
+     */
+    override fun remove(index: Int) {
         mediaSource?.removeMediaSource(index)
     }
 
@@ -289,13 +268,17 @@ class MediaService : Service() {
         if (intent != null) {
             @Suppress("UNCHECKED_CAST")
             val medias = intent.getSerializableExtra("medias") as ArrayList<MediaInfo>?
-            prepare(medias)
+            prepare(medias, mediaCompleteListener)
         }
     }
 
-    fun prepare(medias: List<MediaInfo>?) {
+    override fun prepare(medias: List<MediaInfo>?) {
+        prepare(medias, mediaCompleteListener)
+    }
+
+    fun prepare(medias: List<MediaInfo>?, runnable: Runnable) {
         if (medias != null) {
-            mediaSource = medias.toMediaSource(dataSourceFactory, mediaCompleteListener)
+            mediaSource = medias.toMediaSource(dataSourceFactory, runnable)
             player.prepare(mediaSource)
         }
     }
@@ -305,7 +288,7 @@ class MediaService : Service() {
             seekToWindow(intent.getIntExtra("position", 0))
     }
 
-    fun seekToWindow(position: Int) {
+    override fun seekToWindow(position: Int) {
         player.seekToDefaultPosition(position)
     }
 
@@ -313,21 +296,42 @@ class MediaService : Service() {
         player.playWhenReady = false
     }
 
-    fun playOrPause() {
-        if (player.playWhenReady)
+    override fun playOrPause() {
+        if (isPlaying())
             pause()
         else
             play(null)
     }
 
     fun stop() {
+        playerNotification.stopNotification()
+        timer?.cancel()
         player.stop()
+    }
+
+    fun destroy() {
+        stopSelf()
+    }
+
+    /**
+     * switch play mode
+     */
+    override fun nextPlayMode() {
+        var index = 0
+        for (i in 0..(playMode.size - 1)) {
+            if (playMode[i] == player.repeatMode) {
+                index = i + 1
+                break
+            }
+        }
+
+        player.repeatMode = playMode[index % playMode.size]
     }
 
     /**
      * seek in range 0-1000
      */
-    fun seekTo(percent: Int) {
+    override fun seekTo(percent: Int) {
         var pc = percent
         if (percent > 1000)
             pc = 1000
@@ -340,7 +344,7 @@ class MediaService : Service() {
      * track progress
      *
      */
-    fun track(progressChanged: ProgressChanged) {
+    override fun track(progressChanged: ProgressChanged) {
         if (tracker != null)
             throw RuntimeException("last tracker is not released")
 
@@ -353,38 +357,35 @@ class MediaService : Service() {
      *
      * if u want to release tracker reference, use [unTrack] instead
      */
-    fun pauseTracker() {
+    override fun pauseTracker() {
         tracker!!.release()
     }
 
     /**
      * resume stopped tracker
      */
-    fun resumeTracker() {
+    override fun resumeTracker() {
         tracker!!.track()
     }
 
-    fun unTrack() {
+    override fun unTrack() {
         tracker?.release()
         tracker = null
     }
 
-    fun isPlaying(): Boolean {
+    override fun isPlaying(): Boolean {
         return player.playWhenReady && player.playbackState != Player.STATE_IDLE && player.playbackState != Player.STATE_ENDED
     }
 
     /**
      * get current [MediaInfo] in player
      */
-    fun getCurrentMedia(): MediaInfo? {
+    override fun getCurrentMedia(): MediaInfo? {
         return player.currentTag as MediaInfo
     }
 
-    fun playlist(): List<MediaInfo>? {
+    override fun playlist(): List<MediaInfo>? {
         return mediaSource?.getMediaInfos()
     }
 
-    inner class ServiceBinder : Binder() {
-        fun getService(): MediaService = this@MediaService
-    }
 }

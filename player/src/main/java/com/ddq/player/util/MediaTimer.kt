@@ -11,9 +11,9 @@ import java.util.*
 class MediaTimer(
     private val service: MediaService,
     private val pending: Queue<Intent>?,
-    private val type: Int,
+    val type: Int,
     millsInFuture: Long
-) : Timer(millsInFuture, 400) {
+) : Timer(millsInFuture, 200) {
 
     companion object {
         const val TYPE_NORMAL = 1

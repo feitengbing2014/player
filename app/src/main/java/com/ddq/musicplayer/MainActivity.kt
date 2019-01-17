@@ -13,6 +13,7 @@ import com.bumptech.glide.Glide
 import com.ddq.musicplayer.R.layout.activity_player
 import com.ddq.player.*
 import com.ddq.player.data.MediaInfo
+import com.ddq.player.util.Preference
 import com.ddq.player.util.ProgressChanged
 import com.google.android.exoplayer2.Player
 import com.google.gson.Gson
@@ -28,11 +29,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
         media_progress.progress = (played * 1000 / duration).toInt()
     }
 
-    private var mService: MediaService? = null
+    private var mService: ServiceBinder? = null
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        val binder = service as MediaService.ServiceBinder
-        mService = binder.getService()
+        mService = service as ServiceBinder
         val stream = assets.open("data.json")
         val reader = BufferedReader(InputStreamReader(stream))
         val builder = StringBuilder()
@@ -59,6 +59,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
         super.onCreate(savedInstanceState)
         setContentView(activity_player)
 
+        with(Preference(this)) {
+            setPlayMode(arrayOf(Player.REPEAT_MODE_ALL, Player.REPEAT_MODE_ONE))
+        }
+
         play.setOnClickListener {
             play(it)
         }
@@ -76,6 +80,23 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
             fragment.list = mService?.playlist()
             fragment.service = mService
             fragment.show(supportFragmentManager, "play_list")
+        }
+
+        playing_mode.setOnClickListener {
+            mService?.nextPlayMode()
+        }
+
+        clock.setOnClickListener {
+            val fragment = TimerFragment()
+            fragment.callback = object : Callback {
+                override fun onSelect(mode: Int, mills: Long) {
+                    val intent = Intent()
+                    intent.putExtra("type", mode)
+                    intent.putExtra("mills", mills)
+                    mService?.setTimer(intent)
+                }
+            }
+            fragment.show(supportFragmentManager, "clock")
         }
 
         media_progress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -149,12 +170,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
     }
 
     fun play(view: View) {
-        if (mService!!.isPlaying()) {
-            mService!!.pause()
-            return
-        }
-
-        mService!!.play(null)
+        mService!!.playOrPause()
     }
 
     fun previous(view: View) {

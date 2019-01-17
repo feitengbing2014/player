@@ -7,9 +7,10 @@ import com.google.android.exoplayer2.Player
 /**
  * created by dongdaqing 19-1-15 下午4:16
  *
- * query playing time every 200ms
+ * query content position every 200ms
  */
-class ProgressTracker(private val player: Player, private val progressChanged: ProgressChanged) : Runnable {
+class ProgressTracker(private val player: Player, private val progressChanged: ProgressChanged) : Runnable,
+    Player.EventListener {
 
     private val handler: Handler = Handler(Looper.getMainLooper())
     private var canceled: Boolean = false
@@ -21,6 +22,7 @@ class ProgressTracker(private val player: Player, private val progressChanged: P
 
     fun track() {
         canceled = false
+        handler.removeCallbacks(this)
         handler.post(this)
     }
 
@@ -28,6 +30,18 @@ class ProgressTracker(private val player: Player, private val progressChanged: P
         if (!canceled) {
             progressChanged.onProgressChanged(player.currentPosition, player.duration)
             handler.postDelayed(this, 200)
+        }
+    }
+
+    /**
+     * listen playback state,stop tracking when player is no longer play
+     * resume tracking when player start playing
+     */
+    override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+        if (playWhenReady && playbackState != Player.STATE_IDLE && playbackState != Player.STATE_ENDED) {
+            track()
+        } else {
+            handler.removeCallbacks(this)
         }
     }
 }

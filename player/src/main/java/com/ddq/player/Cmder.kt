@@ -24,6 +24,7 @@ class Cmder(private val service: MediaService) : BroadcastReceiver() {
             addAction(Commands.SET_PLAYER_PLAY_OR_PAUSE)
             addAction(Commands.SET_PLAYER_PREVIOUS)
             addAction(Commands.SET_PLAYER_NEXT)
+            addAction(Commands.SET_PLAYER_DESTROY)
 
             addAction(Commands.QUERY_TIMELINE_POSITION)
             addAction(Commands.QUERY_TRACK_INFO)
@@ -54,6 +55,7 @@ class Cmder(private val service: MediaService) : BroadcastReceiver() {
             Commands.SET_PLAYER_PLAY_OR_PAUSE -> service.playOrPause()
             Commands.SET_PLAYER_PREVIOUS -> service.previous()
             Commands.SET_PLAYER_NEXT -> service.next()
+            Commands.SET_PLAYER_DESTROY -> service.destroy()
         }
     }
 

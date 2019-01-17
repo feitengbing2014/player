@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.bumptech.glide.Glide
 import com.ddq.player.MediaService
+import com.ddq.player.ServiceBinder
 import com.ddq.player.data.MediaInfo
 import kotlinx.android.synthetic.main.recycler_play_list_item.view.*
 
@@ -21,7 +22,7 @@ import kotlinx.android.synthetic.main.recycler_play_list_item.view.*
 class PlayListFragment : AppCompatDialogFragment() {
 
     var list: List<MediaInfo>? = null
-    var service: MediaService? = null
+    var service: ServiceBinder? = null
     var adapter: Adapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
