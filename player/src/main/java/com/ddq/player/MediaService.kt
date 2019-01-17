@@ -21,7 +21,7 @@ import com.google.android.exoplayer2.util.Util
  * this service must start by calling Context#startService(packName,intent)
  *
  */
- class MediaService : Service(), Controls {
+internal class MediaService : Service(), Controls {
 
     override fun onBind(intent: Intent?): IBinder? {
         return ServiceBinder(this)
@@ -181,6 +181,7 @@ import com.google.android.exoplayer2.util.Util
         cmder.register()
         playerNotification.startOrUpdateNotification()
         dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, packageName))
+        sendBroadcast(Intent(Commands.ACTION_SERVICE_CREATED))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -192,6 +193,8 @@ import com.google.android.exoplayer2.util.Util
 
     override fun onDestroy() {
         Log.d("MediaService", "onDestroy")
+        val intent = Intent(Commands.ACTION_SERVICE_DESTROYED)
+        sendBroadcast(intent)
         cmder.unregister()
         stop()
         player.release()

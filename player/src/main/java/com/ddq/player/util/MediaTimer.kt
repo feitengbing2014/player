@@ -8,7 +8,7 @@ import java.util.*
 /**
  * created by dongdaqing 19-1-11 下午3:26
  */
-class MediaTimer(
+internal class MediaTimer(
     private val service: MediaService,
     private val pending: Queue<Intent>?,
     val type: Int,

@@ -10,7 +10,7 @@ import com.google.android.exoplayer2.Player
  * created by dongdaqing 19-1-11 下午2:16
  * 用来处理各项广播事件
  */
-class Cmder(private val service: MediaService) : BroadcastReceiver() {
+internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
 
     fun register() {
         val filter = IntentFilter()

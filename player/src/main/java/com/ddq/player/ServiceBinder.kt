@@ -5,7 +5,7 @@ import android.os.Binder
 import com.ddq.player.data.MediaInfo
 import com.ddq.player.util.ProgressChanged
 
-class ServiceBinder(private val mediaService: MediaService) : Binder(), Controls {
+internal class ServiceBinder(private val mediaService: MediaService) : Binder(), Controls {
     override fun setTimer(intent: Intent) {
         mediaService.setTimer(intent)
     }

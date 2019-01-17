@@ -33,7 +33,7 @@ import com.google.android.exoplayer2.Timeline
 
 const val NOW_PLAYING_CHANNEL: String = "com.ddq.player.media.NOW_PLAYING"
 
-class PlayerNotification(
+internal class PlayerNotification(
     private val service: MediaService,
     private val player: Player
 ) {

@@ -1,5 +1,6 @@
 package com.ddq.player
 
+import android.annotation.SuppressLint
 import android.content.*
 import android.os.IBinder
 import com.ddq.player.data.MediaInfo
@@ -9,15 +10,18 @@ import com.ddq.player.util.ProgressChanged
  * created by dongdaqing 19-1-17 上午11:40
  */
 
-class MediaServiceManager private constructor(context: Context) : BroadcastReceiver(), ServiceConnection, Controls {
+class MediaServiceManager private constructor(private val context: Context) : BroadcastReceiver(), ServiceConnection {
 
     private var binder: ServiceBinder? = null
+    private var started: Boolean = false
 
     companion object {
+        @SuppressLint("StaticFieldLeak")
         lateinit var instance: MediaServiceManager
+
         fun get(context: Context): MediaServiceManager {
             if (!this::instance.isInitialized) {
-                instance = MediaServiceManager(context)
+                instance = MediaServiceManager(context.applicationContext)
             }
             return instance
         }
@@ -26,13 +30,23 @@ class MediaServiceManager private constructor(context: Context) : BroadcastRecei
     init {
         val filter = IntentFilter()
         with(filter) {
+            addAction(Commands.ACTION_SERVICE_CREATED)
             addAction(Commands.ACTION_SERVICE_DESTROYED)
         }
         context.applicationContext.registerReceiver(this, filter)
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        binder = null
+        when (intent?.action) {
+            Commands.ACTION_SERVICE_CREATED -> {
+                started = true
+
+            }
+            Commands.ACTION_SERVICE_DESTROYED -> {
+                started = false
+                binder = null
+            }
+        }
     }
 
     override fun onServiceDisconnected(name: ComponentName?) {
@@ -43,51 +57,88 @@ class MediaServiceManager private constructor(context: Context) : BroadcastRecei
         binder = service as ServiceBinder?
     }
 
-    override fun next() {
+    fun next(any: Any) {
+        action { binder?.next() }
     }
 
-    override fun previous() {
+    fun previous() {
+        action { binder?.previous() }
     }
 
-    override fun remove(index: Int) {
+    fun remove(index: Int) {
+        action { binder?.remove(index) }
     }
 
-    override fun prepare(medias: List<MediaInfo>?) {
+    fun prepare(medias: List<MediaInfo>?) {
+        action { binder?.prepare(medias) }
     }
 
-    override fun seekToWindow(position: Int) {
+    fun seekToWindow(position: Int) {
+        action { binder?.seekToWindow(position) }
     }
 
-    override fun playOrPause() {
+    fun playOrPause() {
+        action { binder?.playOrPause() }
     }
 
-    override fun nextPlayMode() {
+    fun nextPlayMode() {
+        action { binder?.nextPlayMode() }
     }
 
-    override fun seekTo(percent: Int) {
+    fun seekTo(percent: Int) {
+        action { binder?.seekTo(percent) }
     }
 
-    override fun track(progressChanged: ProgressChanged) {
+    fun track(progressChanged: ProgressChanged) {
+        action { binder?.track(progressChanged) }
     }
 
-    override fun pauseTracker() {
+    fun pauseTracker() {
+        action { binder?.pauseTracker() }
     }
 
-    override fun resumeTracker() {
+    fun resumeTracker() {
+        action { binder?.resumeTracker() }
     }
 
-    override fun unTrack() {
+    fun unTrack() {
+        action { binder?.unTrack() }
     }
 
-    override fun isPlaying(): Boolean {
+    fun isPlaying(): Boolean? {
+        return action { binder?.isPlaying() }
     }
 
-    override fun getCurrentMedia(): MediaInfo? {
+    fun getCurrentMedia(): MediaInfo? {
+        return action { binder?.getCurrentMedia() }
     }
 
-    override fun playlist(): List<MediaInfo>? {
+    fun playlist(): List<MediaInfo>? {
+        return action { binder?.playlist() }
     }
 
-    override fun setTimer(intent: Intent) {
+    fun setTimer(intent: Intent) {
+        action { binder?.setTimer(intent) }
+    }
+
+    private fun <R> action(runnable: () -> R?): R? {
+        if (binder == null) {
+            if (started) {
+                bindService(context)
+            } else {
+                startService(context)
+            }
+        } else {
+            return runnable.invoke()
+        }
+        return null
+    }
+
+    private fun startService(context: Context) {
+        context.startService(Intent(context, MediaService::class.java))
+    }
+
+    private fun bindService(context: Context) {
+        context.bindService(Intent(context, MediaService::class.java), this, Context.BIND_AUTO_CREATE)
     }
 }

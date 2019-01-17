@@ -23,6 +23,8 @@ class Commands {
          */
         const val ACTION_BUFFERING = "ddq.player.action.buffering"
 
+        const val ACTION_SERVICE_CREATED = "ddq.player.action.service_created"
+
         //设置参数
         const val SET_COUNTDOWN_TIMER = "ddq.player.set.countdown_timer" //设置定时器
         const val SET_REPEAT_MODE = "ddq.player.set.repeat_mode" //设置播放模式
