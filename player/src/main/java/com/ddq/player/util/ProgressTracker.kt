@@ -14,16 +14,23 @@ class ProgressTracker(private val player: Player, private val progressChanged: P
 
     private val handler: Handler = Handler(Looper.getMainLooper())
     private var canceled: Boolean = false
+    private var added: Boolean = false
 
     fun release() {
         canceled = true
+        added = false
+        player.removeListener(this)
         handler.removeCallbacks(this)
     }
 
     fun track() {
         canceled = false
+        if (!added)
+            player.addListener(this)
+        added = true
         handler.removeCallbacks(this)
-        handler.post(this)
+        if (readyToTrack())
+            handler.post(this)
     }
 
     override fun run() {
@@ -38,11 +45,15 @@ class ProgressTracker(private val player: Player, private val progressChanged: P
      * resume tracking when player start playing
      */
     override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-        if (playWhenReady && playbackState != Player.STATE_IDLE && playbackState != Player.STATE_ENDED) {
+        if (playWhenReady && playbackState == Player.STATE_READY) {
             track()
         } else {
             handler.removeCallbacks(this)
         }
+    }
+
+    private fun readyToTrack(): Boolean {
+        return player.playWhenReady && player.playbackState == Player.STATE_READY
     }
 }
 

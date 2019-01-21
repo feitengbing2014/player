@@ -84,7 +84,7 @@ internal class PlayerNotification(
         if (player.currentTag == null)
             return
 
-        notificationManager.notify(notificationId, createNotification())
+        service.startForeground(notificationId, createNotification())
     }
 
     fun startOrUpdateNotification() {

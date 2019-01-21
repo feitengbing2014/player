@@ -6,6 +6,7 @@ import com.ddq.player.data.MediaInfo
 import com.ddq.player.util.ProgressChanged
 
 internal class ServiceBinder(private val mediaService: MediaService) : Binder(), Controls {
+
     override fun setTimer(intent: Intent) {
         mediaService.setTimer(intent)
     }
@@ -20,6 +21,10 @@ internal class ServiceBinder(private val mediaService: MediaService) : Binder(),
 
     override fun remove(index: Int) {
         mediaService.remove(index)
+    }
+
+    override fun prepare(intent: Intent?) {
+        mediaService.prepare(intent)
     }
 
     override fun prepare(medias: List<MediaInfo>?) {

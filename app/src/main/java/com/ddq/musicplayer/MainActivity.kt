@@ -1,17 +1,14 @@
 package com.ddq.musicplayer
 
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.SeekBar
 import com.bumptech.glide.Glide
 import com.ddq.musicplayer.R.layout.activity_player
 import com.ddq.player.*
+import com.ddq.player.data.CountTime
 import com.ddq.player.data.MediaInfo
 import com.ddq.player.util.Preference
 import com.ddq.player.util.ProgressChanged
@@ -22,17 +19,17 @@ import kotlinx.android.synthetic.main.activity_player.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
+class MainActivity : AppCompatActivity(), ProgressChanged {
 
     override fun onProgressChanged(played: Long, duration: Long) {
         media_played.text = played.toMediaTime()
         media_progress.progress = (played * 1000 / duration).toInt()
     }
 
-    private var mService: ServiceBinder? = null
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(activity_player)
 
-    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        mService = service as ServiceBinder
         val stream = assets.open("data.json")
         val reader = BufferedReader(InputStreamReader(stream))
         val builder = StringBuilder()
@@ -46,18 +43,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
         val str = builder.toString()
         val type = object : TypeToken<List<MediaInfo>>() {}.type
         val list = Gson().fromJson<List<MediaInfo>>(str, type)
-        mService?.prepare(list)
-        mService?.track(this)
-    }
-
-    override fun onServiceDisconnected(name: ComponentName?) {
-        mService?.unTrack()
-        mService = null
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(activity_player)
+        MediaServiceManager.prepare(list)
+        MediaServiceManager.track(this, this)
 
         with(Preference(this)) {
             setPlayMode(arrayOf(Player.REPEAT_MODE_ALL, Player.REPEAT_MODE_ONE))
@@ -77,13 +64,12 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
 
         playlist.setOnClickListener {
             val fragment = PlayListFragment()
-            fragment.list = mService?.playlist()
-            fragment.service = mService
+            fragment.list = MediaServiceManager.playlist()
             fragment.show(supportFragmentManager, "play_list")
         }
 
         playing_mode.setOnClickListener {
-            mService?.nextPlayMode()
+            MediaServiceManager.nextPlayMode()
         }
 
         clock.setOnClickListener {
@@ -91,9 +77,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
             fragment.callback = object : Callback {
                 override fun onSelect(mode: Int, mills: Long) {
                     val intent = Intent()
-                    intent.putExtra("type", mode)
-                    intent.putExtra("mills", mills)
-                    mService?.setTimer(intent)
+                    intent.putExtra("data", CountTime(mode, mills))
+                    MediaServiceManager.setTimer(intent)
                 }
             }
             fragment.show(supportFragmentManager, "clock")
@@ -104,12 +89,12 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                mService?.pauseTracker()
+                MediaServiceManager.pauseTracker()
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar) {
-                mService?.seekTo(seekBar.progress)
-                mService?.resumeTracker()
+                MediaServiceManager.seekTo(seekBar.progress)
+                MediaServiceManager.resumeTracker()
             }
         })
 
@@ -159,25 +144,15 @@ class MainActivity : AppCompatActivity(), ServiceConnection, ProgressChanged {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        bindService(Intent(this, MediaService::class.java), this, Context.BIND_AUTO_CREATE)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        unbindService(this)
-    }
-
     fun play(view: View) {
-        mService!!.playOrPause()
+        MediaServiceManager.playOrPause()
     }
 
     fun previous(view: View) {
-        mService!!.previous()
+        MediaServiceManager.previous()
     }
 
     fun next(view: View) {
-        mService!!.next()
+        MediaServiceManager.next()
     }
 }

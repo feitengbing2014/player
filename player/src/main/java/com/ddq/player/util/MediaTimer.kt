@@ -3,6 +3,7 @@ package com.ddq.player.util
 import android.content.Intent
 import com.ddq.player.Commands
 import com.ddq.player.MediaService
+import com.ddq.player.data.CountTime.Companion.TYPE_CURRENT
 import java.util.*
 
 /**
@@ -14,11 +15,6 @@ internal class MediaTimer(
     val type: Int,
     millsInFuture: Long
 ) : Timer(millsInFuture, 200) {
-
-    companion object {
-        const val TYPE_NORMAL = 1
-        const val TYPE_CURRENT = 2
-    }
 
     fun isCountForCurrent(): Boolean = type == TYPE_CURRENT
 
@@ -33,6 +29,11 @@ internal class MediaTimer(
         }
 
         sendCountBroadcast(millisUntilFinished)
+    }
+
+    override fun cancel() {
+        super.cancel()
+        sendBroadcast(Intent(Commands.ACTION_COUNT_CANCEL))
     }
 
     override fun onFinish() {

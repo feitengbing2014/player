@@ -11,6 +11,7 @@ interface Controls {
     fun next()
     fun previous()
     fun remove(index: Int)
+    fun prepare(intent: Intent?)
     fun prepare(medias: List<MediaInfo>?)
     fun seekToWindow(position: Int)
     fun playOrPause()

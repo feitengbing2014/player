@@ -33,6 +33,17 @@ fun List<MediaInfo>.toMediaSource(dataSourceFactory: DataSource.Factory, runnabl
     return source
 }
 
+fun List<MediaInfo>.findItemIndex(mediaInfo: MediaInfo): Int {
+    var postion = -1
+    forEachIndexed { index, it ->
+        if (mediaInfo.mediaCode == it.mediaCode) {
+            postion = index
+            return@forEachIndexed
+        }
+    }
+    return postion
+}
+
 fun ConcatenatingMediaSource.getMediaInfos(): List<MediaInfo> {
     val count = size
     val list = ArrayList<MediaInfo>(count)

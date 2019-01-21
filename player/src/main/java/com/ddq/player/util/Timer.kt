@@ -34,7 +34,7 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
      * Cancel the countdown.
      */
     @Synchronized
-    fun cancel() {
+    open fun cancel() {
         mCancelled = true
         mHandler.removeMessages(MSG)
     }

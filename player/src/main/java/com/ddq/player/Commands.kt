@@ -14,6 +14,7 @@ class Commands {
         const val ACTION_SHUFFLE_MODE_CHANGED = "ddq.player.action.shuffle_mode"
         const val ACTION_POSITION_DISCONTINUITY_CHANGED = "ddq.player.action.position_discontinuity"
         const val ACTION_COUNTING = "ddq.player.action.counting"//正在倒计时
+        const val ACTION_COUNT_CANCEL = "ddq.player.action.count_cancel"
         const val ACTION_SERVICE_DESTROYED = "ddq.player.action.service_destroyed"
         /**
          * 播放器进入缓冲状态，几种情况
@@ -23,7 +24,7 @@ class Commands {
          */
         const val ACTION_BUFFERING = "ddq.player.action.buffering"
 
-        const val ACTION_SERVICE_CREATED = "ddq.player.action.service_created"
+        const val ACTION_SERVICE_STARTED = "ddq.player.action.service_started"
 
         //设置参数
         const val SET_COUNTDOWN_TIMER = "ddq.player.set.countdown_timer" //设置定时器

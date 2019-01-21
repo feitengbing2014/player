@@ -14,6 +14,7 @@ import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import kotlin.math.max
 
 /**
  * created by dongdaqing 19-1-11 下午1:46
@@ -47,6 +48,7 @@ internal class MediaService : Service(), Controls {
     private var mediaSource: ConcatenatingMediaSource? = null
     private var tracker: ProgressTracker? = null
     private var durationSeeker: DurationSeeker? = null
+    private var startId: Int = -1
 
     private lateinit var dataSourceFactory: DefaultDataSourceFactory
 
@@ -181,10 +183,14 @@ internal class MediaService : Service(), Controls {
         cmder.register()
         playerNotification.startOrUpdateNotification()
         dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, packageName))
-        sendBroadcast(Intent(Commands.ACTION_SERVICE_CREATED))
+        Log.d("MediaService", "create service")
+
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("MediaService", "service started")
+        this.startId = startId
+        sendBroadcast(Intent(Commands.ACTION_SERVICE_STARTED))
         if (Commands.SET_PLAYER_PLAY == intent?.action) {
             play(intent)
         }
@@ -194,6 +200,12 @@ internal class MediaService : Service(), Controls {
     override fun onDestroy() {
         Log.d("MediaService", "onDestroy")
         val intent = Intent(Commands.ACTION_SERVICE_DESTROYED)
+        val playlist = playlist()
+        if (playlist != null) {
+            intent.putExtra("medias", ArrayList(playlist))
+            intent.putExtra("data", getCurrentMedia())
+        }
+
         sendBroadcast(intent)
         cmder.unregister()
         stop()
@@ -202,8 +214,8 @@ internal class MediaService : Service(), Controls {
     }
 
     override fun setTimer(intent: Intent) {
-        val type = intent.getIntExtra("type", MediaTimer.TYPE_NORMAL)
-        if (type == MediaTimer.TYPE_CURRENT && player.duration <= 0) {
+        val countTime = intent.getSerializableExtra("data") as CountTime
+        if (countTime.type == CountTime.TYPE_CURRENT && player.duration <= 0) {
             durationSeeker = DurationSeeker(intent, this)
             return
         }
@@ -216,8 +228,8 @@ internal class MediaService : Service(), Controls {
         timer = MediaTimer(
             this,
             actions?.toPendingActions(),
-            type,
-            if (type == MediaTimer.TYPE_CURRENT)
+            countTime.type,
+            if (countTime.type == CountTime.TYPE_CURRENT)
                 (player.duration - player.currentPosition)
             else
                 intent.getLongExtra("mills", 0)
@@ -267,22 +279,30 @@ internal class MediaService : Service(), Controls {
     /**
      * prepare data to play
      */
-    fun prepare(intent: Intent?) {
+    override fun prepare(intent: Intent?) {
         if (intent != null) {
             @Suppress("UNCHECKED_CAST")
             val medias = intent.getSerializableExtra("medias") as ArrayList<MediaInfo>?
-            prepare(medias, mediaCompleteListener)
+            val position = intent.getIntExtra("position", 0)
+            val media = intent.getSerializableExtra("data") as MediaInfo
+            prepare(medias, position, media, mediaCompleteListener)
         }
     }
 
     override fun prepare(medias: List<MediaInfo>?) {
-        prepare(medias, mediaCompleteListener)
+        prepare(medias, 0, null, mediaCompleteListener)
     }
 
-    fun prepare(medias: List<MediaInfo>?, runnable: Runnable) {
+    private fun prepare(medias: List<MediaInfo>?, position: Int, media: MediaInfo?, runnable: Runnable) {
         if (medias != null) {
             mediaSource = medias.toMediaSource(dataSourceFactory, runnable)
             player.prepare(mediaSource)
+
+            var pos = position
+            if (media != null)
+                pos = max(pos, medias.findItemIndex(media))
+
+            seekToWindow(pos)
         }
     }
 
@@ -309,11 +329,8 @@ internal class MediaService : Service(), Controls {
     fun stop() {
         playerNotification.stopNotification()
         timer?.cancel()
+        tracker?.release()
         player.stop()
-    }
-
-    fun destroy() {
-        stopSelf()
     }
 
     /**
@@ -390,5 +407,4 @@ internal class MediaService : Service(), Controls {
     override fun playlist(): List<MediaInfo>? {
         return mediaSource?.getMediaInfos()
     }
-
 }

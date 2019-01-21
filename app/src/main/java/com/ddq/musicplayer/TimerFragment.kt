@@ -10,7 +10,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.ddq.player.util.MediaTimer
+import com.ddq.player.data.CountTime
 import kotlinx.android.synthetic.main.recycler_timer_item.view.*
 
 /**
@@ -73,7 +73,7 @@ class TimerFragment : AppCompatDialogFragment() {
         init {
             itemView.setOnClickListener {
                 val time = list[adapterPosition]
-                callback?.onSelect(if (time == -1L) MediaTimer.TYPE_CURRENT else MediaTimer.TYPE_NORMAL, time)
+                callback?.onSelect(if (time == -1L) CountTime.TYPE_CURRENT else CountTime.TYPE_NORMAL, time)
                 dismiss()
             }
         }
