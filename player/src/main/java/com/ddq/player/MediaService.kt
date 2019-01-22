@@ -1,7 +1,9 @@
 package com.ddq.player
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import com.ddq.player.data.*
@@ -49,18 +51,19 @@ internal class MediaService : Service(), Controls {
     private var tracker: ProgressTracker? = null
     private var durationSeeker: DurationSeeker? = null
     private var startId: Int = -1
+    private var buffering: Boolean = false
 
     private lateinit var dataSourceFactory: DefaultDataSourceFactory
 
+    private val handler = Handler()
     private val cmder = Cmder(this)
-    private val mediaCompleteListener = Runnable {
-        /**
-         * timer is counting for current media
-         */
-        Log.d("MediaService", "mediaComplete:${timer?.type}")
-        if (timer != null && timer!!.isCountForCurrent()) {
-            pause()
-        }
+    private val bufferDispatcher = Runnable {
+        val intent = Intent(Commands.ACTION_BUFFERING)
+        buffering = true
+        intent.putExtra("buffering", buffering)
+        intent.putExtra("position", player.bufferedPosition)
+        intent.putExtra("percent", player.bufferedPercentage)
+        sendBroadcast(intent)
     }
 
     private val listener = object : Player.EventListener {
@@ -111,7 +114,23 @@ internal class MediaService : Service(), Controls {
                 }
                 }"
             )
-            if (isPlaying()) {
+
+            if (playbackState == Player.STATE_BUFFERING) {
+                //如果缓冲持续400ms以上，就发送缓冲通知
+                handler.postDelayed(bufferDispatcher, 400)
+            } else {
+                if (buffering) {
+                    buffering = false
+                    //发送缓冲结束广播
+                    sendBroadcast(Intent(Commands.ACTION_BUFFERING))
+                }
+                //（网络出错，缓冲成功）
+                handler.removeCallbacks(bufferDispatcher)
+            }
+
+            if (playWhenReady && playbackState == Player.STATE_READY) {
+                //只有当数据能够播放的时候才开始倒计时，在buffer和ready之间会有一段缓冲时间，
+                //不能在缓冲的时候进行倒计时操作
                 timer?.resume()
             } else {
                 timer?.pause()
@@ -153,8 +172,32 @@ internal class MediaService : Service(), Controls {
             )
         }
 
+        @SuppressLint("SwitchIntDef")
         override fun onPositionDiscontinuity(reason: Int) {
             Log.d("MediaService", "onPositionDiscontinuity:$reason")
+
+            if (timer != null) {
+                when (reason) {
+                    DISCONTINUITY_REASON_PERIOD_TRANSITION -> {
+                        //曲目切换（当前文件播放完，播放器内部自动切换）
+                        //如果是播放完当前就停止的计时器，那么就要暂停
+                        if (timer!!.isCountForCurrent())
+                            pause()
+                    }
+                    DISCONTINUITY_REASON_SEEK_ADJUSTMENT -> {
+                        //这是手动切换上一曲，下一曲的回调
+                        if (timer!!.isCountForCurrent()) {
+                            //取消倒计时
+                            timer!!.cancel()
+                            timer = null
+                        } else {
+                            //正常倒计时，暂停倒计时，待下一曲开始播放之后在开始
+                            timer!!.pause()
+                        }
+                    }
+                }
+            }
+
             val intent = Intent(Commands.ACTION_POSITION_DISCONTINUITY_CHANGED)
             intent.putExtra("reason", reason)
             sendBroadcast(intent)
@@ -184,7 +227,6 @@ internal class MediaService : Service(), Controls {
         playerNotification.startOrUpdateNotification()
         dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, packageName))
         Log.d("MediaService", "create service")
-
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -285,15 +327,15 @@ internal class MediaService : Service(), Controls {
             val medias = intent.getSerializableExtra("medias") as ArrayList<MediaInfo>?
             val position = intent.getIntExtra("position", 0)
             val media = intent.getSerializableExtra("data") as MediaInfo
-            prepare(medias, position, media, mediaCompleteListener)
+            prepare(medias, position, media, null)
         }
     }
 
     override fun prepare(medias: List<MediaInfo>?) {
-        prepare(medias, 0, null, mediaCompleteListener)
+        prepare(medias, 0, null, null)
     }
 
-    private fun prepare(medias: List<MediaInfo>?, position: Int, media: MediaInfo?, runnable: Runnable) {
+    private fun prepare(medias: List<MediaInfo>?, position: Int, media: MediaInfo?, runnable: Runnable?) {
         if (medias != null) {
             mediaSource = medias.toMediaSource(dataSourceFactory, runnable)
             player.prepare(mediaSource)
@@ -320,6 +362,16 @@ internal class MediaService : Service(), Controls {
     }
 
     override fun playOrPause() {
+
+        /**
+         * 由于数据错误或者网络错误导致播放器进入停止状态，这时候必须重新prepare
+         */
+        if (player.playbackState == STATE_IDLE) {
+            prepare(mediaSource?.getMediaInfos(), 0, player.currentTag as MediaInfo?, null)
+            play(null)
+            return
+        }
+
         if (isPlaying())
             pause()
         else

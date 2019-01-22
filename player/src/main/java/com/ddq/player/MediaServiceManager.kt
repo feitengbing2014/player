@@ -73,16 +73,18 @@ class MediaServiceManager private constructor(private val context: Context) : Br
 
         fun track(activity: FragmentActivity, progressChanged: ProgressChanged) {
             if (instance != null) {
+                instance!!.progressChanged = progressChanged
                 activity.lifecycle.addObserver(instance!!.observer)
             }
-            action(Runnable { instance!!.binder?.track(progressChanged) })
+            action(true, Runnable { instance!!.binder?.track(progressChanged) })
         }
 
         fun track(fragment: Fragment, progressChanged: ProgressChanged) {
             if (instance != null) {
+                instance!!.progressChanged = progressChanged
                 fragment.lifecycle.addObserver(instance!!.observer)
             }
-            action(Runnable { instance!!.binder?.track(progressChanged) })
+            action(true, Runnable { instance!!.binder?.track(progressChanged) })
         }
 
         fun pauseTracker() {
@@ -110,7 +112,10 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         }
 
         fun playlist(): List<MediaInfo>? {
-            return instance!!.binder?.playlist()
+            if (instance?.binder == null && instance?.history != null) {
+                return instance?.history!!.getSerializableExtra("medias") as ArrayList<MediaInfo>?
+            }
+            return instance?.binder?.playlist()
         }
 
         private fun get(context: Context): MediaServiceManager? {
@@ -120,17 +125,22 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             return instance
         }
 
-        private fun action(runnable: Runnable) {
+        private fun action(ignore: Boolean, runnable: Runnable) {
             if (get(appContext)!!.binder == null) {
                 Log.d("MediaService", "start service")
                 if (!instance!!.starting) {
                     instance!!.starting = true
                     startService(instance!!.context)
                 }
-                instance!!.runner.add(runnable)
+                if (!ignore)
+                    instance!!.runner.add(runnable)
             } else {
                 runnable.run()
             }
+        }
+
+        private fun action(runnable: Runnable) {
+            action(false, runnable)
         }
 
         private fun startService(context: Context) {

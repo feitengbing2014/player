@@ -15,6 +15,7 @@ data class MediaInfo(
     val mediaName: String,
     val mediaDesc: String?,
     val mediaCover: String?,
+    val mediaType: String?,
     val duration: Long,
     val uri: String,
     val extras: Bundle?
@@ -25,7 +26,7 @@ fun MediaInfo.toMediaSource(dataSourceFactory: DataSource.Factory) =
         .setTag(this)
         .createMediaSource(Uri.parse(uri))
 
-fun List<MediaInfo>.toMediaSource(dataSourceFactory: DataSource.Factory, runnable: Runnable): ConcatenatingMediaSource {
+fun List<MediaInfo>.toMediaSource(dataSourceFactory: DataSource.Factory, runnable: Runnable?): ConcatenatingMediaSource {
     val source = ConcatenatingMediaSource()
     forEach {
         source.addMediaSource(it.toMediaSource(dataSourceFactory), runnable)

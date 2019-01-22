@@ -23,9 +23,7 @@ import com.bumptech.glide.request.target.NotificationTarget
 import com.bumptech.glide.request.target.Target
 import com.ddq.player.data.MediaInfo
 import com.ddq.player.drawable.RoundedCornersTransformation
-import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.Timeline
 
 /**
  * created by dongdaqing 19-1-16 下午4:47
@@ -65,6 +63,8 @@ internal class PlayerNotification(
     private var lastPlaybackState = -1
     private var isNotificationStarted: Boolean = false
 
+    private var notification: Notification? = null
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
         val notificationChannel =
@@ -84,7 +84,10 @@ internal class PlayerNotification(
         if (player.currentTag == null)
             return
 
-        service.startForeground(notificationId, createNotification())
+        if (notification == null) {
+            notification = createNotification()
+            service.startForeground(notificationId, notification)
+        }
     }
 
     fun startOrUpdateNotification() {
@@ -126,25 +129,32 @@ internal class PlayerNotification(
         views.setOnClickPendingIntent(R.id.media_play, playPauseIntent)
         views.setOnClickPendingIntent(R.id.media_next, nextIntent)
         views.setOnClickPendingIntent(R.id.media_close, closeIntent)
-        val notification = NotificationCompat.Builder(service, NOW_PLAYING_CHANNEL)
+
+        changeCover(mediaInfo.mediaCover)
+
+        return NotificationCompat.Builder(service, NOW_PLAYING_CHANNEL)
             .setCustomBigContentView(views)
             .setSmallIcon(service.smallIcon)
             .setOngoing(true)
             .setAutoCancel(false)
+            .setContentTitle(mediaInfo.mediaName)
+            .setContentText(mediaInfo.mediaDesc)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
+    }
 
+    private fun changeCover(string: String?) {
         handler.post {
             val target = NotificationTarget(
                 service.applicationContext,
                 R.id.media_cover,
-                views,
+                notification?.bigContentView,
                 notification,
                 notificationId
             )
             Glide.with(service)
                 .asBitmap()
-                .load(mediaInfo.mediaCover)
+                .load(string)
                 .apply(RequestOptions.centerCropTransform())
                 .apply(RequestOptions.overrideOf(imageSize, imageSize))
                 .listener(object : RequestListener<Bitmap> {
@@ -183,43 +193,40 @@ internal class PlayerNotification(
                 })
                 .into(target)
         }
-
-        return notification
     }
 
     private inner class PlayerListener : Player.EventListener {
 
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            //这里只是状态发生了改变，没必要全局更新
             if (wasPlayWhenReady != playWhenReady && playbackState != Player.STATE_IDLE || lastPlaybackState != playbackState) {
-                startOrUpdateNotification()
+                if (notification != null) {
+                    notification?.bigContentView?.setImageViewResource(
+                        R.id.media_play,
+                        if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
+                    )
+                    notificationManager.notify(notificationId, notification)
+                } else {
+                    startOrUpdateNotification()
+                }
             }
             wasPlayWhenReady = playWhenReady
             lastPlaybackState = playbackState
         }
 
-        override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
-            if (player.playbackState == Player.STATE_IDLE) {
-                return
-            }
-            startOrUpdateNotification()
-        }
-
-        override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
-            if (player.playbackState == Player.STATE_IDLE) {
-                return
-            }
-            startOrUpdateNotification()
-        }
-
         override fun onPositionDiscontinuity(reason: Int) {
-            startOrUpdateNotification()
-        }
-
-        override fun onRepeatModeChanged(repeatMode: Int) {
-            if (player.playbackState == Player.STATE_IDLE) {
-                return
+            if (notification == null) {
+                startOrUpdateNotification()
+            } else if (player.currentTag != null) {
+                val views = notification?.bigContentView
+                views?.setImageViewResource(
+                    R.id.media_play,
+                    if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
+                )
+                val mediaInfo = player.currentTag as MediaInfo
+                views?.setTextViewText(R.id.media_name, mediaInfo.mediaName)
+                changeCover(mediaInfo.mediaCover)
             }
-            startOrUpdateNotification()
         }
     }
 }

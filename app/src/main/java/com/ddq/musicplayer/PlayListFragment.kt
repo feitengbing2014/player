@@ -33,7 +33,7 @@ class PlayListFragment : AppCompatDialogFragment() {
         val recyclerView = RecyclerView(context)
         recyclerView.setBackgroundColor(Color.WHITE)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = Adapter(ArrayList(list), context)
+        adapter = Adapter(if (list == null) null else ArrayList(list), context)
         recyclerView.adapter = adapter
         return recyclerView
     }
