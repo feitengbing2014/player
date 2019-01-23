@@ -12,7 +12,7 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
     /**
      * Millis since epoch when alarm should stop.
      */
-    private val mMillisInFuture = millisInFuture
+    var mMillisInFuture = millisInFuture
 
     /**
      * The interval in millis that the user receives callbacks
@@ -28,8 +28,6 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
 
     private var mPaused = true
 
-    private var millisLeft: Long = millisInFuture
-
     /**
      * Cancel the countdown.
      */
@@ -43,15 +41,6 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
     fun pause() {
         mPaused = true
         mHandler.removeMessages(MSG)
-    }
-
-    /**
-     * Cancel the countdown after it is initialized.
-     */
-    @Synchronized
-    fun cancelAfterCreate() {
-        mCancelled = true
-
     }
 
     /**
@@ -76,11 +65,11 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
             return this
 
         mPaused = false
-        if (millisLeft <= 0) {
+        if (mMillisInFuture <= 0) {
             onFinish()
             return this
         }
-        mStopTimeInFuture = SystemClock.elapsedRealtime() + millisLeft
+        mStopTimeInFuture = SystemClock.elapsedRealtime() + mMillisInFuture
         mHandler.sendMessage(mHandler.obtainMessage(MSG))
         return this
     }
@@ -108,20 +97,20 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
                 true
             }
 
-            millisLeft = mStopTimeInFuture - SystemClock.elapsedRealtime()
-            if (millisLeft <= 0) {
+            mMillisInFuture = mStopTimeInFuture - SystemClock.elapsedRealtime()
+            if (mMillisInFuture <= 0) {
                 onFinish()
             } else {
                 val lastTickStart = SystemClock.elapsedRealtime()
-                onTick(millisLeft)
+                onTick(mMillisInFuture)
 
                 // take into account user's onTick taking time to execute
                 val lastTickDuration = SystemClock.elapsedRealtime() - lastTickStart
                 var delay: Long
 
-                if (millisLeft < mCountdownInterval) {
+                if (mMillisInFuture < mCountdownInterval) {
                     // just delay until done
-                    delay = millisLeft - lastTickDuration
+                    delay = mMillisInFuture - lastTickDuration
 
                     // special case: user's onTick took more than interval to
                     // complete, trigger onFinish without delay

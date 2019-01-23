@@ -5,8 +5,7 @@ package com.ddq.player
  */
 class Commands {
     companion object {
-        //播放器的动作广播
-        const val ACTION_TIMELINE_CHANGED = "ddq.player.action.timeline"
+        //播放器的动作广播，使用时监听以ACTION_开头的动作来做UI处理，
         const val ACTION_TRACK_CHANGED = "ddq.player.action.track"
         const val ACTION_LOADING_CHANGED = "ddq.player.action.loading"
         const val ACTION_PLAY_STATE_CHANGED = "ddq.player.action.play_state"
@@ -14,8 +13,10 @@ class Commands {
         const val ACTION_SHUFFLE_MODE_CHANGED = "ddq.player.action.shuffle_mode"
         const val ACTION_POSITION_DISCONTINUITY_CHANGED = "ddq.player.action.position_discontinuity"
         const val ACTION_COUNTING = "ddq.player.action.counting"//正在倒计时
-        const val ACTION_COUNT_CANCEL = "ddq.player.action.count_cancel"
+        const val ACTION_COUNT_CANCEL = "ddq.player.action.count_cancel"//倒计时取消
         const val ACTION_SERVICE_DESTROYED = "ddq.player.action.service_destroyed"
+        const val ACTION_PLAYER_CURRENT_STATE = "ddq.player.action.player_current_state"
+        const val ACTION_ITEM_REMOVED ="ddq.player.action.item_removed"
         /**
          * 播放器进入缓冲状态，几种情况
          * 1.普通播放器开始播放会首先缓冲数据
@@ -40,10 +41,9 @@ class Commands {
         const val SET_PLAYER_DESTROY = "ddq.player.destroy"//停止service
 
         //查询参数(查询相关状态，返回相应的内容)
-        const val QUERY_TIMELINE_POSITION = "ddq.player.query.timeline"
         const val QUERY_TRACK_INFO = "ddq.player.query.track_info"
         const val QUERY_PLAY_STATE = "ddq.player.query.play_state"
         const val QUERY_REPEAT_MODE = "ddq.player.query.repeat_mode"
-        const val QUERY_COUNTDOWN_TIMER = "ddq.player.query.countdown_timer"
+        const val QUERY_PLAYER_CURRENT_STATE = "ddq.player.query.player_current_state"//查询播放器当前的状态，这个action是查询的所有状态
     }
 }

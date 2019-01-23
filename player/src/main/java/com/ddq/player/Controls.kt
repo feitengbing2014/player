@@ -11,6 +11,7 @@ interface Controls {
     fun next()
     fun previous()
     fun remove(index: Int)
+    fun remove(mediaInfo: MediaInfo)
     fun prepare(intent: Intent?)
     fun prepare(medias: List<MediaInfo>?)
     fun seekToWindow(position: Int)
@@ -25,4 +26,5 @@ interface Controls {
     fun getCurrentMedia(): MediaInfo?
     fun playlist(): List<MediaInfo>?
     fun setTimer(intent: Intent)
+    fun cancelTimer()
 }

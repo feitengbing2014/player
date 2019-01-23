@@ -52,6 +52,7 @@ internal class MediaService : Service(), Controls {
     private var durationSeeker: DurationSeeker? = null
     private var startId: Int = -1
     private var buffering: Boolean = false
+    private var clearQueue: Boolean = false
 
     private lateinit var dataSourceFactory: DefaultDataSourceFactory
 
@@ -241,18 +242,26 @@ internal class MediaService : Service(), Controls {
 
     override fun onDestroy() {
         Log.d("MediaService", "onDestroy")
-        val intent = Intent(Commands.ACTION_SERVICE_DESTROYED)
-        val playlist = playlist()
-        if (playlist != null) {
-            intent.putExtra("medias", ArrayList(playlist))
-            intent.putExtra("data", getCurrentMedia())
-        }
 
+        val intent = Intent(Commands.ACTION_SERVICE_DESTROYED)
+        if (!clearQueue) {
+            val playlist = playlist()
+            if (playlist != null) {
+                intent.putExtra("medias", ArrayList(playlist))
+                intent.putExtra("data", getCurrentMedia())
+            }
+        }
         sendBroadcast(intent)
+
         cmder.unregister()
         stop()
         player.release()
         super.onDestroy()
+    }
+
+    override fun cancelTimer() {
+        timer?.cancel()
+        timer = null
     }
 
     override fun setTimer(intent: Intent) {
@@ -315,7 +324,20 @@ internal class MediaService : Service(), Controls {
      * remove item from playlist
      */
     override fun remove(index: Int) {
-        mediaSource?.removeMediaSource(index)
+        val media = mediaSource?.getMediaSource(index)?.tag as MediaInfo
+        mediaSource?.removeMediaSource(index) {
+            val intent = Intent(Commands.ACTION_ITEM_REMOVED)
+            intent.putExtra("media", media)
+            sendBroadcast(intent)
+        }
+    }
+
+    override fun remove(mediaInfo: MediaInfo) {
+        mediaSource?.removeMediaSource(mediaInfo, Runnable {
+            val intent = Intent(Commands.ACTION_ITEM_REMOVED)
+            intent.putExtra("media", mediaInfo)
+            sendBroadcast(intent)
+        })
     }
 
     /**
@@ -385,6 +407,13 @@ internal class MediaService : Service(), Controls {
         player.stop()
     }
 
+    fun destroy(intent: Intent) {
+        /**
+         * 这里不做关闭操作，真正的结束操作在[MediaServiceManager]里面
+         */
+        clearQueue = intent.getBooleanExtra("clear", false)
+    }
+
     /**
      * switch play mode
      */
@@ -443,6 +472,39 @@ internal class MediaService : Service(), Controls {
     override fun unTrack() {
         tracker?.release()
         tracker = null
+    }
+
+    /***************************  query **********************************/
+    fun queryTrackInfo() {
+        val intent = Intent(Commands.ACTION_TRACK_CHANGED)
+        intent.putExtra("media", getCurrentMedia())
+        intent.putExtra("position", player.contentPosition)
+        intent.putExtra("duration", player.duration)
+        sendBroadcast(intent)
+    }
+
+    fun queryPlayState() {
+        val intent = Intent(Commands.ACTION_PLAY_STATE_CHANGED)
+        intent.putExtra("play", isPlaying())
+        sendBroadcast(intent)
+    }
+
+    fun queryRepeatMode() {
+        val intent = Intent(Commands.ACTION_REPEAT_MODE_CHANGED)
+        intent.putExtra("mode", player.repeatMode)
+        sendBroadcast(intent)
+    }
+
+    fun queryPlayerCurrentState() {
+        val intent = Intent(Commands.ACTION_PLAYER_CURRENT_STATE)
+        intent.putExtra("media", getCurrentMedia())
+        intent.putExtra("position", player.contentPosition)
+        intent.putExtra("duration", player.duration)
+        intent.putExtra("playing", isPlaying())
+        intent.putExtra("playMode", player.repeatMode)
+        if (timer != null)
+            intent.putExtra("timer", timer!!.mMillisInFuture)
+        sendBroadcast(intent)
     }
 
     override fun isPlaying(): Boolean {

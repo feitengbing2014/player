@@ -8,6 +8,7 @@ import android.os.IBinder
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
 import android.util.Log
+import com.ddq.player.data.Comparator
 import com.ddq.player.data.MediaInfo
 import com.ddq.player.util.ProgressChanged
 
@@ -24,8 +25,10 @@ class MediaServiceManager private constructor(private val context: Context) : Br
     private var progressChanged: ProgressChanged? = null
 
     private val observer = GenericLifecycleObserver { _, event ->
-        if (event == Lifecycle.Event.ON_DESTROY)
+        if (event == Lifecycle.Event.ON_DESTROY){
             progressChanged = null
+            unTrack()
+        }
     }
 
     companion object {
@@ -49,6 +52,10 @@ class MediaServiceManager private constructor(private val context: Context) : Br
 
         fun remove(index: Int) {
             action(Runnable { instance!!.binder?.remove(index) })
+        }
+
+        fun remove(mediaInfo: MediaInfo) {
+            action(Runnable { instance!!.binder?.remove(mediaInfo) })
         }
 
         fun prepare(medias: List<MediaInfo>?) {
@@ -111,6 +118,19 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             return instance!!.binder?.getCurrentMedia()
         }
 
+        fun sameAsCurrentMedia(mediaInfo: MediaInfo, comparator: Comparator): Boolean {
+            val current = getCurrentMedia()
+            return comparator.isSame(current, mediaInfo)
+        }
+
+        fun sameAsCurrentMedia(mediaInfo: MediaInfo): Boolean {
+            return sameAsCurrentMedia(mediaInfo, object : Comparator {
+                override fun isSame(a: MediaInfo?, b: MediaInfo?): Boolean {
+                    return a != null && a.mediaCode == b?.mediaCode
+                }
+            })
+        }
+
         fun playlist(): List<MediaInfo>? {
             if (instance?.binder == null && instance?.history != null) {
                 return instance?.history!!.getSerializableExtra("medias") as ArrayList<MediaInfo>?
@@ -171,6 +191,11 @@ class MediaServiceManager private constructor(private val context: Context) : Br
                 binder = null
             }
             Commands.SET_PLAYER_DESTROY -> {
+                if (intent.getBooleanExtra("clear", false)) {
+                    //clear history
+                    history = null
+                }
+
                 appContext.unbindService(this)
                 appContext.stopService(Intent(appContext, MediaService::class.java))
             }

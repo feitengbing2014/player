@@ -23,10 +23,10 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
     var playStateChanged: PlayStateChanged? = null
     var loadingChanged: LoadingChanged? = null
     var playModeChanged: PlayModeChanged? = null
+    var queueChanged: QueueChanged? = null
 
     init {
         with(filter) {
-            addAction(Commands.ACTION_TIMELINE_CHANGED)
             addAction(Commands.ACTION_TRACK_CHANGED)
             addAction(Commands.ACTION_LOADING_CHANGED)
             addAction(Commands.ACTION_PLAY_STATE_CHANGED)
@@ -34,6 +34,8 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
             addAction(Commands.ACTION_SHUFFLE_MODE_CHANGED)
             addAction(Commands.ACTION_POSITION_DISCONTINUITY_CHANGED)
             addAction(Commands.ACTION_COUNTING)
+            addAction(Commands.ACTION_COUNT_CANCEL)
+            addAction(Commands.ACTION_PLAYER_CURRENT_STATE)
         }
 
         activity?.lifecycle!!.addObserver(GenericLifecycleObserver { _, event ->
@@ -55,36 +57,63 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
 
     override fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {
-            Commands.ACTION_TIMELINE_CHANGED -> {
+            Commands.ACTION_PLAYER_CURRENT_STATE -> {
+                onTrackChanged(intent)
+                onPlayModeChanged(intent)
+                onPlayStateChanged(intent)
+                onCountChanged(intent.getLongExtra("seconds_left", 0))
             }
-            Commands.ACTION_TRACK_CHANGED -> trackChanged?.onTrackChange(
-                intent.getSerializableExtra("media") as MediaInfo,
-                intent.getLongExtra("duration", 0)
-            )
-            Commands.ACTION_LOADING_CHANGED -> loadingChanged?.onLoadingChanged(
-                intent.getBooleanExtra(
-                    "loading",
-                    false
-                )
-            )
-            Commands.ACTION_PLAY_STATE_CHANGED -> playStateChanged?.onPlayStateChanged(
-                intent.getBooleanExtra(
-                    "play",
-                    false
-                )
-            )
-            Commands.ACTION_REPEAT_MODE_CHANGED -> playModeChanged?.onPlayModeChanged(
-                intent.getIntExtra(
-                    "mode",
-                    Player.REPEAT_MODE_OFF
-                )
-            )
+            Commands.ACTION_TRACK_CHANGED -> onTrackChanged(intent)
+            Commands.ACTION_LOADING_CHANGED -> onLoadingChanged(intent)
+            Commands.ACTION_PLAY_STATE_CHANGED -> onPlayStateChanged(intent)
+            Commands.ACTION_REPEAT_MODE_CHANGED -> onPlayModeChanged(intent)
             Commands.ACTION_SHUFFLE_MODE_CHANGED -> {
             }
             Commands.ACTION_POSITION_DISCONTINUITY_CHANGED -> {
             }
-            Commands.ACTION_COUNTING -> count?.onCounting(intent.getLongExtra("seconds_left", 0))
+            Commands.ACTION_COUNTING -> onCountChanged(intent.getLongExtra("seconds_left", 0))
+            Commands.ACTION_COUNT_CANCEL -> onCountChanged(0)
+            Commands.ACTION_ITEM_REMOVED -> queueChanged?.onQueueChanged()
         }
+    }
+
+    private fun onTrackChanged(intent: Intent) {
+        trackChanged?.onTrackChange(
+            intent.getSerializableExtra("media") as MediaInfo,
+            intent.getLongExtra("duration", 0),
+            intent.getLongExtra("position", -1)
+        )
+    }
+
+    private fun onPlayStateChanged(intent: Intent) {
+        playStateChanged?.onPlayStateChanged(
+            intent.getBooleanExtra(
+                "play",
+                false
+            )
+        )
+    }
+
+    private fun onPlayModeChanged(intent: Intent) {
+        playModeChanged?.onPlayModeChanged(
+            intent.getIntExtra(
+                "mode",
+                Player.REPEAT_MODE_OFF
+            )
+        )
+    }
+
+    private fun onCountChanged(mills: Long) {
+        count?.onCounting(mills)
+    }
+
+    private fun onLoadingChanged(intent: Intent) {
+        loadingChanged?.onLoadingChanged(
+            intent.getBooleanExtra(
+                "loading",
+                false
+            )
+        )
     }
 }
 
@@ -95,8 +124,9 @@ interface Count {
 interface TrackChanged {
     /**
      * use [duration] instead of [MediaInfo.duration]
+     * @param position 只有在[Commands.ACTION_PLAYER_CURRENT_STATE]时才有用，其他的action下值是-1
      */
-    fun onTrackChange(mediaInfo: MediaInfo, duration: Long)
+    fun onTrackChange(mediaInfo: MediaInfo, duration: Long, position: Long)
 }
 
 interface PlayStateChanged {
@@ -109,4 +139,8 @@ interface LoadingChanged {
 
 interface PlayModeChanged {
     fun onPlayModeChanged(mode: Int)
+}
+
+interface QueueChanged {
+    fun onQueueChanged()
 }

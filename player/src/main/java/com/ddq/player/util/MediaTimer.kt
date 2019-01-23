@@ -12,7 +12,7 @@ import java.util.*
 internal class MediaTimer(
     private val service: MediaService,
     private val pending: Queue<Intent>?,
-    val type: Int,
+    private val type: Int,
     millsInFuture: Long
 ) : Timer(millsInFuture, 200) {
 

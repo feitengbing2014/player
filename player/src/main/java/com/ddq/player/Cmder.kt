@@ -26,11 +26,9 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             addAction(Commands.SET_PLAYER_NEXT)
             addAction(Commands.SET_PLAYER_DESTROY)
 
-            addAction(Commands.QUERY_TIMELINE_POSITION)
             addAction(Commands.QUERY_TRACK_INFO)
             addAction(Commands.QUERY_PLAY_STATE)
             addAction(Commands.QUERY_REPEAT_MODE)
-            addAction(Commands.QUERY_COUNTDOWN_TIMER)
         }
         service.registerReceiver(this, filter)
     }
@@ -43,11 +41,10 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             Commands.SET_COUNTDOWN_TIMER -> service.setTimer(intent)
             Commands.SET_REPEAT_MODE -> service.setRepeatMode(intent.getIntExtra("repeat_mode", Player.REPEAT_MODE_OFF))
 
-            Commands.QUERY_TIMELINE_POSITION -> queryTimeLinePosition()
-            Commands.QUERY_TRACK_INFO -> queryTrackInfo()
-            Commands.QUERY_PLAY_STATE -> queryPlayState()
-            Commands.QUERY_REPEAT_MODE -> queryRepeatMode()
-            Commands.QUERY_COUNTDOWN_TIMER -> queryCountdownTimer()
+            Commands.QUERY_TRACK_INFO -> service.queryTrackInfo()
+            Commands.QUERY_PLAY_STATE -> service.queryPlayState()
+            Commands.QUERY_REPEAT_MODE -> service.queryRepeatMode()
+            Commands.QUERY_PLAYER_CURRENT_STATE -> service.queryPlayerCurrentState()
 
             Commands.SET_PLAYER_PLAY -> service.play(intent)
             Commands.SET_PLAYER_PAUSE -> service.pause()
@@ -55,26 +52,7 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             Commands.SET_PLAYER_PLAY_OR_PAUSE -> service.playOrPause()
             Commands.SET_PLAYER_PREVIOUS -> service.previous()
             Commands.SET_PLAYER_NEXT -> service.next()
+            Commands.SET_PLAYER_DESTROY -> service.destroy(intent)
         }
-    }
-
-    private fun queryTimeLinePosition() {
-
-    }
-
-    private fun queryTrackInfo() {
-
-    }
-
-    private fun queryPlayState() {
-
-    }
-
-    private fun queryRepeatMode() {
-
-    }
-
-    private fun queryCountdownTimer() {
-
     }
 }
