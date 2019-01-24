@@ -24,6 +24,7 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
     var loadingChanged: LoadingChanged? = null
     var playModeChanged: PlayModeChanged? = null
     var queueChanged: QueueChanged? = null
+    var timelineChanged: TimeLineChanged? = null
 
     init {
         with(filter) {
@@ -38,6 +39,8 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
             addAction(Commands.ACTION_PLAYER_CURRENT_STATE)
             addAction(Commands.ACTION_ITEM_ADDED)
             addAction(Commands.ACTION_ITEM_REMOVED)
+            addAction(Commands.ACTION_TIMELINE_CHANGED)
+            addAction(Commands.ACTION_QUEUE_CHANGED)
         }
 
         activity?.lifecycle!!.addObserver(GenericLifecycleObserver { _, event ->
@@ -76,6 +79,8 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
 
             Commands.ACTION_ITEM_REMOVED -> queueChanged?.onQueueChanged()
             Commands.ACTION_ITEM_ADDED -> queueChanged?.onQueueChanged()
+            Commands.ACTION_QUEUE_CHANGED -> queueChanged?.onQueueChanged()
+            Commands.ACTION_TIMELINE_CHANGED -> timelineChanged?.onTimeLineChanged(intent.getLongExtra("duration", 0))
         }
     }
 
@@ -149,4 +154,8 @@ interface PlayModeChanged {
 
 interface QueueChanged {
     fun onQueueChanged()
+}
+
+interface TimeLineChanged {
+    fun onTimeLineChanged(duration: Long)
 }

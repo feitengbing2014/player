@@ -16,8 +16,10 @@ class Commands {
         const val ACTION_COUNT_CANCEL = "ddq.player.action.count_cancel"//倒计时取消
         const val ACTION_SERVICE_DESTROYED = "ddq.player.action.service_destroyed"
         const val ACTION_PLAYER_CURRENT_STATE = "ddq.player.action.player_current_state"
-        const val ACTION_ITEM_REMOVED ="ddq.player.action.item_removed"
-        const val ACTION_ITEM_ADDED ="ddq.player.action.item_added"
+        const val ACTION_ITEM_REMOVED = "ddq.player.action.item_removed"
+        const val ACTION_ITEM_ADDED = "ddq.player.action.item_added"
+        const val ACTION_TIMELINE_CHANGED = "ddq.player.action.timeline_changed"
+        const val ACTION_QUEUE_CHANGED = "ddq.player.action.queue_changed"
         /**
          * 播放器进入缓冲状态，几种情况
          * 1.普通播放器开始播放会首先缓冲数据

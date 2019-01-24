@@ -22,14 +22,6 @@ class MediaServiceManager private constructor(private val context: Context) : Br
     private var binder: ServiceBinder? = null
     private var starting: Boolean = false
     private var history: Intent? = null
-    private var progressChanged: ProgressChanged? = null
-
-    private val observer = GenericLifecycleObserver { _, event ->
-        if (event == Lifecycle.Event.ON_DESTROY) {
-            progressChanged = null
-            unTrack()
-        }
-    }
 
     companion object {
 
@@ -37,6 +29,14 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         var instance: MediaServiceManager? = null
         @SuppressLint("StaticFieldLeak")
         lateinit var appContext: Context
+
+        private var progressChanged: ProgressChanged? = null
+        private val observer = GenericLifecycleObserver { _, event ->
+            if (event == Lifecycle.Event.ON_DESTROY) {
+                progressChanged = null
+                unTrack()
+            }
+        }
 
         fun initialize(context: Context) {
             appContext = context.applicationContext
@@ -87,18 +87,14 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         }
 
         fun track(activity: FragmentActivity, progressChanged: ProgressChanged) {
-            if (instance != null) {
-                instance!!.progressChanged = progressChanged
-                activity.lifecycle.addObserver(instance!!.observer)
-            }
+            this.progressChanged = progressChanged
+            activity.lifecycle.addObserver(observer)
             action(true, Runnable { instance!!.binder?.track(progressChanged) })
         }
 
         fun track(fragment: Fragment, progressChanged: ProgressChanged) {
-            if (instance != null) {
-                instance!!.progressChanged = progressChanged
-                fragment.lifecycle.addObserver(instance!!.observer)
-            }
+            this.progressChanged = progressChanged
+            fragment.lifecycle.addObserver(observer)
             action(true, Runnable { instance!!.binder?.track(progressChanged) })
         }
 

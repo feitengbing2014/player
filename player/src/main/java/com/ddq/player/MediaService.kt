@@ -86,6 +86,10 @@ internal class MediaService : Service(), Controls {
             if (player.duration > 0) {
                 durationSeeker?.start()
                 durationSeeker = null
+
+                val intent = Intent(Commands.ACTION_TIMELINE_CHANGED)
+                intent.putExtra("duration", player.duration)
+                sendBroadcast(intent)
             }
         }
 
@@ -380,6 +384,8 @@ internal class MediaService : Service(), Controls {
                 pos = max(pos, medias.findItemIndex(media))
 
             seekToWindow(pos)
+
+            sendBroadcast(Intent(Commands.ACTION_QUEUE_CHANGED))
         }
     }
 
