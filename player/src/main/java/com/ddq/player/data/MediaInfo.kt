@@ -111,7 +111,7 @@ fun List<MediaInfo>.findItemIndex(mediaInfo: MediaInfo): Int {
     return postion
 }
 
-fun ConcatenatingMediaSource.getMediaInfos(): List<MediaInfo> {
+fun ConcatenatingMediaSource.getMediaInfos(): ArrayList<MediaInfo> {
     val count = size
     val list = ArrayList<MediaInfo>(count)
     for (i in 0..(count - 1)) {

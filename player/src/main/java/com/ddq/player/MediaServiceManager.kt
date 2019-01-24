@@ -30,20 +30,6 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         @SuppressLint("StaticFieldLeak")
         lateinit var appContext: Context
 
-        private var progressChanged: ProgressChanged? = null
-        private val observer = GenericLifecycleObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> {
-                    if (progressChanged != null)
-                        instance?.binder?.track(progressChanged!!)
-                }
-
-                Lifecycle.Event.ON_PAUSE -> unTrack()
-
-                Lifecycle.Event.ON_DESTROY -> progressChanged = null
-            }
-        }
-
         fun initialize(context: Context) {
             appContext = context.applicationContext
         }
@@ -93,15 +79,23 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         }
 
         fun track(activity: FragmentActivity, progressChanged: ProgressChanged) {
-            this.progressChanged = progressChanged
-            activity.lifecycle.addObserver(observer)
-            action(true, Runnable { instance!!.binder?.track(progressChanged) })
+            activity.lifecycle.addObserver(GenericLifecycleObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> instance?.binder?.track(progressChanged)
+                    Lifecycle.Event.ON_PAUSE -> unTrack()
+                }
+            })
+            action(Runnable { instance!!.binder?.track(progressChanged) })
         }
 
         fun track(fragment: Fragment, progressChanged: ProgressChanged) {
-            this.progressChanged = progressChanged
-            fragment.lifecycle.addObserver(observer)
-            action(true, Runnable { instance!!.binder?.track(progressChanged) })
+            fragment.lifecycle.addObserver(GenericLifecycleObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> instance?.binder?.track(progressChanged)
+                    Lifecycle.Event.ON_PAUSE -> unTrack()
+                }
+            })
+            action(Runnable { instance!!.binder?.track(progressChanged) })
         }
 
         fun pauseTracker() {
@@ -163,22 +157,17 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             return instance
         }
 
-        private fun action(ignore: Boolean, runnable: Runnable) {
+        private fun action(runnable: Runnable) {
             if (get(appContext)!!.binder == null) {
                 Log.d("MediaService", "start service")
                 if (!instance!!.starting) {
                     instance!!.starting = true
                     startService(instance!!.context)
                 }
-                if (!ignore)
-                    instance!!.runner.add(runnable)
+                instance!!.runner.add(runnable)
             } else {
                 runnable.run()
             }
-        }
-
-        private fun action(runnable: Runnable) {
-            action(false, runnable)
         }
 
         private fun startService(context: Context) {
@@ -233,9 +222,6 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             run.run()
         }
         runner.clear()
-
-        if (progressChanged != null)
-            binder!!.track(progressChanged!!)
     }
 
     private fun bindService(context: Context) {

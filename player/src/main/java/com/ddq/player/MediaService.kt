@@ -251,7 +251,7 @@ internal class MediaService : Service(), Controls {
         if (!clearQueue) {
             val playlist = playlist()
             if (playlist != null) {
-                intent.putExtra("medias", ArrayList(playlist))
+                intent.putExtra("medias", playlist)
                 intent.putExtra("data", getCurrentMedia())
             }
         }
@@ -363,9 +363,9 @@ internal class MediaService : Service(), Controls {
     override fun prepare(intent: Intent?) {
         if (intent != null) {
             @Suppress("UNCHECKED_CAST")
-            val medias = intent.getSerializableExtra("medias") as ArrayList<MediaInfo>?
+            val medias = intent.getParcelableArrayListExtra<MediaInfo>("medias")
             val position = intent.getIntExtra("position", 0)
-            val media = intent.getSerializableExtra("data") as MediaInfo
+            val media = intent.getParcelableExtra<MediaInfo>("data")
             prepare(medias, position, media, null)
         }
     }
@@ -462,12 +462,10 @@ internal class MediaService : Service(), Controls {
 
     /**
      * track progress
-     *
+     * [unTrack] manually when tracker is no long useful
      */
     override fun track(progressChanged: ProgressChanged) {
-        if (tracker != null)
-            throw RuntimeException("last tracker is not released")
-
+        unTrack()
         tracker = ProgressTracker(player, progressChanged)
         tracker?.track()
     }
@@ -521,6 +519,7 @@ internal class MediaService : Service(), Controls {
         intent.putExtra("duration", player.duration)
         intent.putExtra("playing", isPlaying())
         intent.putExtra("playMode", player.repeatMode)
+
         if (timer != null)
             intent.putExtra("timer", timer!!.mMillisInFuture)
         sendBroadcast(intent)
@@ -539,7 +538,7 @@ internal class MediaService : Service(), Controls {
         return player.currentTag as MediaInfo
     }
 
-    override fun playlist(): List<MediaInfo>? {
+    override fun playlist(): ArrayList<MediaInfo>? {
         return mediaSource?.getMediaInfos()
     }
 }

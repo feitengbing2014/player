@@ -67,6 +67,7 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
                 onPlayModeChanged(intent)
                 onPlayStateChanged(intent)
                 onCountChanged(intent.getLongExtra("seconds_left", 0))
+                queueChanged?.onQueueChanged()
             }
             Commands.ACTION_TRACK_CHANGED -> onTrackChanged(intent)
             Commands.ACTION_LOADING_CHANGED -> onLoadingChanged(intent)
