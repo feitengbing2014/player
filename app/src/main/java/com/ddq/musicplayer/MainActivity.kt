@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity(), ProgressChanged {
         MediaServiceManager.track(this, this)
 
         with(Preference(this)) {
+            setSmallIcon(R.drawable.ic_logo_transparent)
             setPlayMode(arrayOf(Player.REPEAT_MODE_ALL, Player.REPEAT_MODE_ONE))
         }
 
@@ -110,7 +111,7 @@ class MainActivity : AppCompatActivity(), ProgressChanged {
             }
 
             trackChanged = object : TrackChanged {
-                override fun onTrackChange(mediaInfo: MediaInfo, duration: Long) {
+                override fun onTrackChange(mediaInfo: MediaInfo, duration: Long, position: Long) {
                     media_name.text = mediaInfo.mediaName
                     media_duration.text = duration.toMediaTime()
                     Glide.with(this@MainActivity).load(mediaInfo.mediaCover).into(cover)

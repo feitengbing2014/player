@@ -78,11 +78,15 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
     }
 
     private fun onTrackChanged(intent: Intent) {
-        trackChanged?.onTrackChange(
-            intent.getSerializableExtra("media") as MediaInfo,
-            intent.getLongExtra("duration", 0),
-            intent.getLongExtra("position", -1)
-        )
+        val media = intent.getParcelableExtra<MediaInfo>("media")
+
+        if (media != null) {
+            trackChanged?.onTrackChange(
+                media as MediaInfo,
+                intent.getLongExtra("duration", 0),
+                intent.getLongExtra("position", -1)
+            )
+        }
     }
 
     private fun onPlayStateChanged(intent: Intent) {
