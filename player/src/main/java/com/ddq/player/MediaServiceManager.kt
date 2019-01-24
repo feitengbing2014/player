@@ -32,9 +32,15 @@ class MediaServiceManager private constructor(private val context: Context) : Br
 
         private var progressChanged: ProgressChanged? = null
         private val observer = GenericLifecycleObserver { _, event ->
-            if (event == Lifecycle.Event.ON_DESTROY) {
-                progressChanged = null
-                unTrack()
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    if (progressChanged != null)
+                        instance?.binder?.track(progressChanged!!)
+                }
+
+                Lifecycle.Event.ON_PAUSE -> unTrack()
+
+                Lifecycle.Event.ON_DESTROY -> progressChanged = null
             }
         }
 
