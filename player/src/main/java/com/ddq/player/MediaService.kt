@@ -528,6 +528,8 @@ internal class MediaService : Service(), Controls {
      * get current [MediaInfo] in player
      */
     override fun getCurrentMedia(): MediaInfo? {
+        if (player.currentTag == null)
+            return null
         return player.currentTag as MediaInfo
     }
 
