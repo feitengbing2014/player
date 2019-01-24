@@ -10,6 +10,7 @@ import com.ddq.player.util.ProgressChanged
 interface Controls {
     fun next()
     fun previous()
+    fun add(media: MediaInfo, index: Int)
     fun remove(index: Int)
     fun remove(mediaInfo: MediaInfo)
     fun prepare(intent: Intent?)

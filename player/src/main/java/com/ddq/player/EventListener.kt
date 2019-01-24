@@ -36,6 +36,8 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
             addAction(Commands.ACTION_COUNTING)
             addAction(Commands.ACTION_COUNT_CANCEL)
             addAction(Commands.ACTION_PLAYER_CURRENT_STATE)
+            addAction(Commands.ACTION_ITEM_ADDED)
+            addAction(Commands.ACTION_ITEM_REMOVED)
         }
 
         activity?.lifecycle!!.addObserver(GenericLifecycleObserver { _, event ->
@@ -67,13 +69,13 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
             Commands.ACTION_LOADING_CHANGED -> onLoadingChanged(intent)
             Commands.ACTION_PLAY_STATE_CHANGED -> onPlayStateChanged(intent)
             Commands.ACTION_REPEAT_MODE_CHANGED -> onPlayModeChanged(intent)
-            Commands.ACTION_SHUFFLE_MODE_CHANGED -> {
-            }
-            Commands.ACTION_POSITION_DISCONTINUITY_CHANGED -> {
-            }
+            Commands.ACTION_SHUFFLE_MODE_CHANGED -> { }
+            Commands.ACTION_POSITION_DISCONTINUITY_CHANGED -> { }
             Commands.ACTION_COUNTING -> onCountChanged(intent.getLongExtra("seconds_left", 0))
             Commands.ACTION_COUNT_CANCEL -> onCountChanged(0)
+
             Commands.ACTION_ITEM_REMOVED -> queueChanged?.onQueueChanged()
+            Commands.ACTION_ITEM_ADDED -> queueChanged?.onQueueChanged()
         }
     }
 

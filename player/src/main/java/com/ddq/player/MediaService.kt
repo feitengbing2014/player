@@ -332,6 +332,14 @@ internal class MediaService : Service(), Controls {
         }
     }
 
+    override fun add(media: MediaInfo, index: Int) {
+        mediaSource?.addMediaSource(index, media.toMediaSource(dataSourceFactory)) {
+            val intent = Intent(Commands.ACTION_ITEM_ADDED)
+            intent.putExtra("media", media)
+            sendBroadcast(intent)
+        }
+    }
+
     override fun remove(mediaInfo: MediaInfo) {
         mediaSource?.removeMediaSource(mediaInfo, Runnable {
             val intent = Intent(Commands.ACTION_ITEM_REMOVED)

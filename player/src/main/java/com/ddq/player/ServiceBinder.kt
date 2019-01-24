@@ -22,6 +22,10 @@ internal class ServiceBinder(private val mediaService: MediaService) : Binder(),
         mediaService.previous()
     }
 
+    override fun add(media: MediaInfo, index: Int) {
+        mediaService.add(media, index)
+    }
+
     override fun remove(index: Int) {
         mediaService.remove(index)
     }

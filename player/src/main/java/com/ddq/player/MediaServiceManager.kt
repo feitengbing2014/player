@@ -25,7 +25,7 @@ class MediaServiceManager private constructor(private val context: Context) : Br
     private var progressChanged: ProgressChanged? = null
 
     private val observer = GenericLifecycleObserver { _, event ->
-        if (event == Lifecycle.Event.ON_DESTROY){
+        if (event == Lifecycle.Event.ON_DESTROY) {
             progressChanged = null
             unTrack()
         }
@@ -52,6 +52,14 @@ class MediaServiceManager private constructor(private val context: Context) : Br
 
         fun remove(index: Int) {
             action(Runnable { instance!!.binder?.remove(index) })
+        }
+
+        fun add(mediaInfo: MediaInfo) {
+            add(mediaInfo, -1)
+        }
+
+        fun add(mediaInfo: MediaInfo, index: Int) {
+            action(Runnable { instance!!.binder?.add(mediaInfo, index) })
         }
 
         fun remove(mediaInfo: MediaInfo) {
@@ -110,7 +118,7 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             action(Runnable { instance!!.binder?.setTimer(intent) })
         }
 
-        fun cancelTimer(){
+        fun cancelTimer() {
             action(Runnable { instance!!.binder?.cancelTimer() })
         }
 
