@@ -29,7 +29,7 @@ class Preference(context: Context) {
     }
 
     fun getSmallIcon(): Int {
-        return preference.getInt("n_s_i", R.drawable.exo_notification_small_icon)
+        return preference.getInt("n_s_i", 0)
     }
 
     fun getTargetPage(): String? {
