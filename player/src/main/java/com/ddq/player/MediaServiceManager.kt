@@ -123,7 +123,7 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         }
 
         fun isPlaying(): Boolean {
-            return if (instance!!.binder == null) false else instance!!.binder!!.isPlaying()
+            return instance != null && instance?.binder != null && instance!!.binder!!.isPlaying()
         }
 
         fun getCurrentMedia(): MediaInfo? {
