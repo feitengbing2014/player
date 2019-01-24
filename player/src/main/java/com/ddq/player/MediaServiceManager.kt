@@ -150,6 +150,10 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             return instance?.binder?.playlist()
         }
 
+        fun serviceAlive(): Boolean {
+            return instance != null && instance?.binder != null
+        }
+
         private fun get(context: Context): MediaServiceManager? {
             if (instance == null) {
                 instance = MediaServiceManager(context.applicationContext)
