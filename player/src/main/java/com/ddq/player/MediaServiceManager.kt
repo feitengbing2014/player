@@ -110,6 +110,10 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             action(Runnable { instance!!.binder?.setTimer(intent) })
         }
 
+        fun cancelTimer(){
+            action(Runnable { instance!!.binder?.cancelTimer() })
+        }
+
         fun isPlaying(): Boolean {
             return if (instance!!.binder == null) false else instance!!.binder!!.isPlaying()
         }
