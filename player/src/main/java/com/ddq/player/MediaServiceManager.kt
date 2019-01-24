@@ -127,7 +127,7 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         }
 
         fun getCurrentMedia(): MediaInfo? {
-            return instance!!.binder?.getCurrentMedia()
+            return instance?.binder?.getCurrentMedia()
         }
 
         fun sameAsCurrentMedia(mediaInfo: MediaInfo, comparator: Comparator): Boolean {
