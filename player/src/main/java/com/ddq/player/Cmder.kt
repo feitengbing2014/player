@@ -29,6 +29,7 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             addAction(Commands.QUERY_TRACK_INFO)
             addAction(Commands.QUERY_PLAY_STATE)
             addAction(Commands.QUERY_REPEAT_MODE)
+            addAction(Commands.QUERY_PLAYER_CURRENT_STATE)
         }
         service.registerReceiver(this, filter)
     }

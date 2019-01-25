@@ -193,8 +193,7 @@ internal class MediaService : Service(), Controls {
                         //这是手动切换上一曲，下一曲的回调
                         if (timer!!.isCountForCurrent()) {
                             //取消倒计时
-                            timer!!.cancel()
-                            timer = null
+                            cancelTimer()
                         } else {
                             //正常倒计时，暂停倒计时，待下一曲开始播放之后在开始
                             timer!!.pause()
@@ -218,6 +217,8 @@ internal class MediaService : Service(), Controls {
         ExoPlayerFactory.newSimpleInstance(this).apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(listener)
+            val repeatMode = preference.getRepeatMode()
+            player.repeatMode = if (repeatMode == -1) playMode[0] else repeatMode
         }
     }
 
@@ -420,8 +421,8 @@ internal class MediaService : Service(), Controls {
     }
 
     fun stop() {
+        cancelTimer()
         playerNotification.stopNotification()
-        timer?.cancel()
         tracker?.release()
         player.stop()
     }
@@ -457,7 +458,22 @@ internal class MediaService : Service(), Controls {
             pc = 1000
         else if (percent < 0)
             pc = 0
-        player.seekTo(player.duration * pc / 1000)
+
+        val ms = player.duration * pc / 1000
+
+        if (timer != null && timer!!.isCountForCurrent()) {
+            //如果是仅限当前曲目的倒计时操作，在进行seek操作时，要将倒计时进行修改
+            timer!!.pause()
+            timer!!.mMillisInFuture = player.duration - ms
+
+            if (isPlaying())
+                timer!!.resume()
+            else {
+                timer!!.onTick(timer!!.mMillisInFuture)
+            }
+        }
+
+        player.seekTo(ms)
     }
 
     /**

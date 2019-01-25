@@ -1,7 +1,6 @@
 package com.ddq.player.util
 
 import android.content.Context
-import com.ddq.player.R
 import com.google.android.exoplayer2.Player
 
 /*
@@ -44,6 +43,14 @@ class Preference(context: Context) {
             )
 
         return modes!!.toIntArray(',')
+    }
+
+    fun setRepeatMode(mode: Int) {
+        preference.edit().putInt("n_r_m", mode).apply()
+    }
+
+    fun getRepeatMode(): Int {
+        return preference.getInt("n_r_m", -1)
     }
 
     fun String.toIntArray(separator: Char): Array<Int> {

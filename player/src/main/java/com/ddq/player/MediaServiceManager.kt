@@ -1,6 +1,5 @@
 package com.ddq.player
 
-import android.annotation.SuppressLint
 import android.arch.lifecycle.GenericLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.content.*
@@ -25,10 +24,9 @@ class MediaServiceManager private constructor(private val context: Context) : Br
 
     companion object {
 
-        @SuppressLint("StaticFieldLeak")
-        var instance: MediaServiceManager? = null
-        @SuppressLint("StaticFieldLeak")
-        lateinit var appContext: Context
+        private lateinit var appContext: Context
+        private var instance: MediaServiceManager? = null
+        private val listener = ArrayList<ServiceConnect>()
 
         fun initialize(context: Context) {
             appContext = context.applicationContext
@@ -79,22 +77,43 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         }
 
         fun track(activity: FragmentActivity, progressChanged: ProgressChanged) {
+
+            val connect = object : ServiceConnect {
+                override fun onConnected() {
+                    instance?.binder?.track(progressChanged)
+                }
+            }
+
             activity.lifecycle.addObserver(GenericLifecycleObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_RESUME -> instance?.binder?.track(progressChanged)
                     Lifecycle.Event.ON_PAUSE -> unTrack()
+                    Lifecycle.Event.ON_DESTROY -> listener.remove(connect)
                 }
             })
+
+            listener.add(connect)
+
             action(Runnable { instance!!.binder?.track(progressChanged) })
         }
 
         fun track(fragment: Fragment, progressChanged: ProgressChanged) {
+            val connect = object : ServiceConnect {
+                override fun onConnected() {
+                    instance?.binder?.track(progressChanged)
+                }
+            }
+
             fragment.lifecycle.addObserver(GenericLifecycleObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_RESUME -> instance?.binder?.track(progressChanged)
                     Lifecycle.Event.ON_PAUSE -> unTrack()
+                    Lifecycle.Event.ON_DESTROY -> listener.remove(connect)
                 }
             })
+
+            listener.add(connect)
+
             action(Runnable { instance!!.binder?.track(progressChanged) })
         }
 
@@ -222,9 +241,17 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             run.run()
         }
         runner.clear()
+
+        for (connect in listener) {
+            connect.onConnected()
+        }
     }
 
     private fun bindService(context: Context) {
         context.bindService(Intent(context, MediaService::class.java), this, Context.BIND_AUTO_CREATE)
     }
+}
+
+interface ServiceConnect {
+    fun onConnected()
 }
