@@ -186,8 +186,10 @@ internal class MediaService : Service(), Controls {
                     DISCONTINUITY_REASON_PERIOD_TRANSITION -> {
                         //曲目切换（当前文件播放完，播放器内部自动切换）
                         //如果是播放完当前就停止的计时器，那么就要暂停
-                        if (timer!!.isCountForCurrent())
+                        if (timer!!.isCountForCurrent()) {
                             pause()
+                            cancelTimer()
+                        }
                     }
                     DISCONTINUITY_REASON_SEEK_ADJUSTMENT -> {
                         //这是手动切换上一曲，下一曲的回调
@@ -217,8 +219,6 @@ internal class MediaService : Service(), Controls {
         ExoPlayerFactory.newSimpleInstance(this).apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(listener)
-            val repeatMode = preference.getRepeatMode()
-            player.repeatMode = if (repeatMode == -1) playMode[0] else repeatMode
         }
     }
 
@@ -232,11 +232,11 @@ internal class MediaService : Service(), Controls {
         cmder.register()
         playerNotification.startOrUpdateNotification()
         dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, packageName))
-        Log.d("MediaService", "create service")
+        val repeatMode = preference.getRepeatMode()
+        player.repeatMode = if (repeatMode == -1) playMode[0] else repeatMode
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("MediaService", "service started")
         this.startId = startId
         sendBroadcast(Intent(Commands.ACTION_SERVICE_STARTED))
         if (Commands.SET_PLAYER_PLAY == intent?.action) {
@@ -247,7 +247,6 @@ internal class MediaService : Service(), Controls {
 
     override fun onDestroy() {
         Log.d("MediaService", "onDestroy")
-
         val intent = Intent(Commands.ACTION_SERVICE_DESTROYED)
         if (!clearQueue) {
             val playlist = playlist()
@@ -288,7 +287,7 @@ internal class MediaService : Service(), Controls {
             if (countTime.type == CountTime.TYPE_CURRENT)
                 (player.duration - player.currentPosition)
             else
-                intent.getLongExtra("mills", 0)
+                countTime.millSeconds
         )
 
         if (isPlaying()) {
@@ -300,6 +299,7 @@ internal class MediaService : Service(), Controls {
 
     fun setRepeatMode(mode: Int) {
         player.repeatMode = mode
+        preference.setRepeatMode(mode)
     }
 
     fun setShuffleModeEnable(enable: Boolean) {
@@ -533,7 +533,7 @@ internal class MediaService : Service(), Controls {
         intent.putExtra("media", getCurrentMedia())
         intent.putExtra("position", player.contentPosition)
         intent.putExtra("duration", player.duration)
-        intent.putExtra("playing", isPlaying())
+        intent.putExtra("play", isPlaying())
         intent.putExtra("playMode", player.repeatMode)
 
         if (timer != null)

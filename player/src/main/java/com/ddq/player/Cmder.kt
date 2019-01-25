@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioManager
 import com.google.android.exoplayer2.Player
 
 /**
@@ -30,6 +31,8 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             addAction(Commands.QUERY_PLAY_STATE)
             addAction(Commands.QUERY_REPEAT_MODE)
             addAction(Commands.QUERY_PLAYER_CURRENT_STATE)
+
+            addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         }
         service.registerReceiver(this, filter)
     }
@@ -54,6 +57,8 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             Commands.SET_PLAYER_PREVIOUS -> service.previous()
             Commands.SET_PLAYER_NEXT -> service.next()
             Commands.SET_PLAYER_DESTROY -> service.destroy(intent)
+
+            AudioManager.ACTION_AUDIO_BECOMING_NOISY -> service.pause()
         }
     }
 }
