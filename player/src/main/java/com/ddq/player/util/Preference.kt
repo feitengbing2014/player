@@ -27,6 +27,14 @@ class Preference(context: Context) {
         preference.edit().putString("n_t_p", string).apply()
     }
 
+    fun setLockScreenTarget(string: String) {
+        preference.edit().putString("n_l_s_t", string).apply()
+    }
+
+    fun getLockScreenTarget(): String? {
+        return preference.getString("n_l_s_t", null)
+    }
+
     fun getSmallIcon(): Int {
         return preference.getInt("n_s_i", 0)
     }

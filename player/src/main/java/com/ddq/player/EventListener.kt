@@ -73,8 +73,10 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
             Commands.ACTION_LOADING_CHANGED -> onLoadingChanged(intent)
             Commands.ACTION_PLAY_STATE_CHANGED -> onPlayStateChanged(intent)
             Commands.ACTION_REPEAT_MODE_CHANGED -> onPlayModeChanged(intent)
-            Commands.ACTION_SHUFFLE_MODE_CHANGED -> { }
-            Commands.ACTION_POSITION_DISCONTINUITY_CHANGED -> { }
+            Commands.ACTION_SHUFFLE_MODE_CHANGED -> {
+            }
+            Commands.ACTION_POSITION_DISCONTINUITY_CHANGED -> {
+            }
             Commands.ACTION_COUNTING -> onCountChanged(intent.getLongExtra("seconds_left", 0))
             Commands.ACTION_COUNT_CANCEL -> onCountChanged(0)
 

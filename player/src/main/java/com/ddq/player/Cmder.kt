@@ -32,6 +32,8 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             addAction(Commands.QUERY_REPEAT_MODE)
             addAction(Commands.QUERY_PLAYER_CURRENT_STATE)
 
+            addAction(Intent.ACTION_SCREEN_OFF)
+
             addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         }
         service.registerReceiver(this, filter)
@@ -57,6 +59,8 @@ internal class Cmder(private val service: MediaService) : BroadcastReceiver() {
             Commands.SET_PLAYER_PREVIOUS -> service.previous()
             Commands.SET_PLAYER_NEXT -> service.next()
             Commands.SET_PLAYER_DESTROY -> service.destroy(intent)
+
+            Intent.ACTION_SCREEN_OFF -> service.lock()
 
             AudioManager.ACTION_AUDIO_BECOMING_NOISY -> service.pause()
         }

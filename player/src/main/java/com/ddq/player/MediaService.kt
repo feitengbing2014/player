@@ -2,6 +2,7 @@ package com.ddq.player
 
 import android.annotation.SuppressLint
 import android.app.Service
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
@@ -44,6 +45,10 @@ internal class MediaService : Service(), Controls {
 
     val smallIcon: Int by lazy {
         preference.getSmallIcon()
+    }
+
+    val lockScreenTarget: String? by lazy {
+        preference.getLockScreenTarget()
     }
 
     private var timer: MediaTimer? = null
@@ -564,5 +569,14 @@ internal class MediaService : Service(), Controls {
 
     override fun setNavigationEnable(enable: Boolean) {
         playerNotification.navigationEnable = enable
+    }
+
+    fun lock() {
+        if (lockScreenTarget != null && isPlaying()) {
+            val intent = Intent()
+            intent.setPackage(packageName)
+            intent.component = ComponentName(this, lockScreenTarget!!)
+            startActivity(intent)
+        }
     }
 }

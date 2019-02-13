@@ -54,8 +54,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/media_previous"
-                    android:layout_weight="1"
-                    android:visibility="gone"/>
+                    android:layout_weight="1"/>
 
             <ImageView
                     android:src="@drawable/ics_player_nf_play"
@@ -70,8 +69,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:id="@+id/media_next"
-                    android:visibility="gone"/>
+                    android:id="@+id/media_next"/>
 
             <ImageView
                     android:src="@drawable/ics_player_nf_close"
