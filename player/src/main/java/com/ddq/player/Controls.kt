@@ -30,4 +30,5 @@ interface Controls {
     fun cancelTimer()
     fun isNavigationEnabled(): Boolean
     fun setNavigationEnable(enable: Boolean)
+    fun position(): Long
 }

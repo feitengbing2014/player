@@ -177,6 +177,12 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             instance?.binder?.setNavigationEnable(enable)
         }
 
+        fun position(): Long {
+            if (instance == null || instance!!.binder == null)
+                return 0L
+            return instance!!.binder!!.position()
+        }
+
         private fun get(context: Context): MediaServiceManager? {
             if (instance == null) {
                 instance = MediaServiceManager(context.applicationContext)

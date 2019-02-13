@@ -25,6 +25,7 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
     var playModeChanged: PlayModeChanged? = null
     var queueChanged: QueueChanged? = null
     var timelineChanged: TimeLineChanged? = null
+    var serviceDestroyed: ServiceDestroyed? = null
 
     init {
         with(filter) {
@@ -41,6 +42,7 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
             addAction(Commands.ACTION_ITEM_REMOVED)
             addAction(Commands.ACTION_TIMELINE_CHANGED)
             addAction(Commands.ACTION_QUEUE_CHANGED)
+            addAction(Commands.ACTION_SERVICE_DESTROYED)
         }
 
         activity?.lifecycle!!.addObserver(GenericLifecycleObserver { _, event ->
@@ -84,6 +86,7 @@ class EventListener(private val activity: FragmentActivity?) : BroadcastReceiver
             Commands.ACTION_ITEM_ADDED -> queueChanged?.onQueueChanged()
             Commands.ACTION_QUEUE_CHANGED -> queueChanged?.onQueueChanged()
             Commands.ACTION_TIMELINE_CHANGED -> timelineChanged?.onTimeLineChanged(intent.getLongExtra("duration", 0))
+            Commands.ACTION_SERVICE_DESTROYED -> serviceDestroyed?.serviceDestroyed()
         }
     }
 
@@ -161,4 +164,8 @@ interface QueueChanged {
 
 interface TimeLineChanged {
     fun onTimeLineChanged(duration: Long)
+}
+
+interface ServiceDestroyed {
+    fun serviceDestroyed()
 }

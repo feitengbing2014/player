@@ -258,6 +258,7 @@ internal class MediaService : Service(), Controls {
             if (playlist != null) {
                 intent.putExtra("medias", playlist)
                 intent.putExtra("data", getCurrentMedia())
+                intent.putExtra("position", position())
             }
         }
         sendBroadcast(intent)
@@ -569,6 +570,10 @@ internal class MediaService : Service(), Controls {
 
     override fun setNavigationEnable(enable: Boolean) {
         playerNotification.navigationEnable = enable
+    }
+
+    override fun position(): Long {
+        return player.currentPosition
     }
 
     fun lock() {
