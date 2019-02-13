@@ -6,6 +6,14 @@ import com.ddq.player.data.MediaInfo
 import com.ddq.player.util.ProgressChanged
 
 internal class ServiceBinder(private val mediaService: MediaService) : Binder(), Controls {
+    override fun isNavigationEnabled(): Boolean {
+        return mediaService.isNavigationEnabled()
+    }
+
+    override fun setNavigationEnable(enable: Boolean) {
+        mediaService.setNavigationEnable(enable)
+    }
+
     override fun cancelTimer() {
         mediaService.cancelTimer()
     }

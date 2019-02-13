@@ -169,6 +169,14 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             return instance != null && instance?.binder != null
         }
 
+        fun isNavigationEnabled(): Boolean {
+            return instance != null && instance?.binder!!.isNavigationEnabled()
+        }
+
+        fun setNaviagtionEnable(enable: Boolean) {
+            instance?.binder?.setNavigationEnable(enable)
+        }
+
         private fun get(context: Context): MediaServiceManager? {
             if (instance == null) {
                 instance = MediaServiceManager(context.applicationContext)

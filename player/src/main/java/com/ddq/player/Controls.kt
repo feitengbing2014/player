@@ -28,4 +28,6 @@ interface Controls {
     fun playlist(): List<MediaInfo>?
     fun setTimer(intent: Intent)
     fun cancelTimer()
+    fun isNavigationEnabled(): Boolean
+    fun setNavigationEnable(enable: Boolean)
 }

@@ -2,4 +2,5 @@
 <resources>
     <dimen name="notification_image_corner">5dp</dimen>
     <dimen name="notification_image_size">98dp</dimen>
+    <dimen name="notification_image_size_small">48dp</dimen>
 </resources>

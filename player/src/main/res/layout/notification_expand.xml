@@ -9,7 +9,7 @@
             android:layout_width="match_parent"
             android:layout_height="125dp"
             android:id="@+id/root"
-            android:background="@color/notification_background">
+            android:background="@drawable/shape_notification_large_bg">
 
         <ImageView
                 android:layout_width="125dp"
@@ -54,13 +54,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/media_previous"
-                    android:layout_weight="1"/>
+                    android:layout_weight="1"
+                    android:visibility="gone"/>
 
             <ImageView
                     android:src="@drawable/ics_player_nf_play"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:scaleType="centerInside"
                     android:id="@+id/media_play"/>
 
             <ImageView
@@ -68,7 +70,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:id="@+id/media_next"/>
+                    android:id="@+id/media_next"
+                    android:visibility="gone"/>
 
             <ImageView
                     android:src="@drawable/ics_player_nf_close"

@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -46,6 +47,7 @@ internal class PlayerNotification(
             Intent(Commands.SET_PLAYER_PLAY_OR_PAUSE),
             PendingIntent.FLAG_CANCEL_CURRENT
         )
+
     private val closeIntent =
         PendingIntent.getBroadcast(service, 0, Intent(Commands.SET_PLAYER_DESTROY), PendingIntent.FLAG_CANCEL_CURRENT)
     private val nextIntent =
@@ -58,10 +60,12 @@ internal class PlayerNotification(
 
     private val imageCorner = service.resources.getDimensionPixelSize(R.dimen.notification_image_corner)
     private val imageSize = service.resources.getDimensionPixelSize(R.dimen.notification_image_size)
+    private val imageSizeSmall = service.resources.getDimensionPixelSize(R.dimen.notification_image_size_small)
 
     private var wasPlayWhenReady = false
     private var lastPlaybackState = -1
-    private var isNotificationStarted: Boolean = false
+    private var isNotificationStarted = false
+    var navigationEnable = true
 
     private var notification: Notification? = null
 
@@ -107,56 +111,83 @@ internal class PlayerNotification(
     }
 
     /**
-     * Creates the notification given the current player state.
+     * Creates the notification_expand given the current player state.
      *
-     * @param player The player for which state to build a notification.
+     * @param player The player for which state to build a notification_expand.
      * @param largeIcon The large icon to be used.
      * @return The [Notification] which has been built.
      */
-    protected fun createNotification(): Notification {
+    private fun createNotification(): Notification {
         if (shouldCreatePlayingChannel())
             createNotificationChannel()
 
         val mediaInfo = player.currentTag as MediaInfo
-        Log.d("MediaService", "update notification:$mediaInfo")
-        val views = RemoteViews(service.packageName, R.layout.notification)
-        views.setTextViewText(R.id.media_name, mediaInfo.mediaName)
-        views.setImageViewResource(
+        Log.d("MediaService", "update notification_expand:$mediaInfo")
+
+        //big style view
+        val bigViews = RemoteViews(service.packageName, R.layout.notification_expand)
+        bigViews.setTextViewText(R.id.media_name, mediaInfo.mediaName)
+        bigViews.setImageViewResource(
             R.id.media_play,
             if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
         )
-        views.setOnClickPendingIntent(R.id.media_previous, previousIntent)
-        views.setOnClickPendingIntent(R.id.media_play, playPauseIntent)
-        views.setOnClickPendingIntent(R.id.media_next, nextIntent)
-        views.setOnClickPendingIntent(R.id.media_close, closeIntent)
+        bigViews.setOnClickPendingIntent(R.id.media_previous, previousIntent)
+        bigViews.setOnClickPendingIntent(R.id.media_play, playPauseIntent)
+        bigViews.setOnClickPendingIntent(R.id.media_next, nextIntent)
+        bigViews.setOnClickPendingIntent(R.id.media_close, closeIntent)
 
-        changeCover(mediaInfo.mediaCover)
+        changeCover(false, mediaInfo.mediaCover)
+
+        //normal style view
+        val normalViews = RemoteViews(service.packageName, R.layout.notification_normal)
+        normalViews.setTextViewText(R.id.media_name, mediaInfo.mediaName)
+        normalViews.setImageViewResource(
+            R.id.media_play,
+            if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
+        )
+        normalViews.setOnClickPendingIntent(R.id.media_play, playPauseIntent)
+        normalViews.setOnClickPendingIntent(R.id.media_close, closeIntent)
+
+        val intent = if (service.targetPage == null) null else Intent()
+        intent?.setPackage(service.packageName)
+        intent?.component = ComponentName(service, service.targetPage)
+        intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         return NotificationCompat.Builder(service, NOW_PLAYING_CHANNEL)
-            .setCustomBigContentView(views)
+            .setCustomBigContentView(bigViews)
+            .setCustomContentView(normalViews)
+            .setContentIntent(
+                if (intent == null) null else PendingIntent.getActivity(
+                    service,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_CANCEL_CURRENT
+                )
+            )
             .setSmallIcon(service.smallIcon)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setContentTitle(mediaInfo.mediaName)
-            .setContentText(mediaInfo.mediaDesc)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .build()
     }
 
-    private fun changeCover(string: String?) {
+    private fun changeCover(bigContentView: Boolean, string: String?) {
         handler.post {
             val target = NotificationTarget(
                 service.applicationContext,
                 R.id.media_cover,
-                notification?.bigContentView,
+                if (bigContentView) notification?.bigContentView else notification?.contentView,
                 notification,
                 notificationId
             )
+            val size = if (bigContentView) imageSize else imageSizeSmall
+
             Glide.with(service)
                 .asBitmap()
                 .load(string)
                 .apply(RequestOptions.centerCropTransform())
-                .apply(RequestOptions.overrideOf(imageSize, imageSize))
+                .apply(RequestOptions.overrideOf(size, size))
                 .listener(object : RequestListener<Bitmap> {
                     override fun onLoadFailed(
                         e: GlideException?,
@@ -188,6 +219,9 @@ internal class PlayerNotification(
                             bitmap.height
                         )
                         target?.onResourceReady(out, null)
+                        //加载大图
+                        if (!bigContentView)
+                            changeCover(true, string)
                         return true
                     }
                 })
@@ -201,10 +235,7 @@ internal class PlayerNotification(
             //这里只是状态发生了改变，没必要全局更新
             if (wasPlayWhenReady != playWhenReady && playbackState != Player.STATE_IDLE || lastPlaybackState != playbackState) {
                 if (notification != null) {
-                    notification?.bigContentView?.setImageViewResource(
-                        R.id.media_play,
-                        if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
-                    )
+                    updatePlayState()
                     notificationManager.notify(notificationId, notification)
                 } else {
                     startOrUpdateNotification()
@@ -218,15 +249,23 @@ internal class PlayerNotification(
             if (notification == null) {
                 startOrUpdateNotification()
             } else if (player.currentTag != null) {
-                val views = notification?.bigContentView
-                views?.setImageViewResource(
-                    R.id.media_play,
-                    if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
-                )
+                updatePlayState()
                 val mediaInfo = player.currentTag as MediaInfo
-                views?.setTextViewText(R.id.media_name, mediaInfo.mediaName)
-                changeCover(mediaInfo.mediaCover)
+                notification?.bigContentView?.setTextViewText(R.id.media_name, mediaInfo.mediaName)
+                notification?.contentView?.setTextViewText(R.id.media_name, mediaInfo.mediaName)
+                changeCover(false, mediaInfo.mediaCover)
             }
+        }
+
+        private fun updatePlayState() {
+            notification?.bigContentView?.setImageViewResource(
+                R.id.media_play,
+                if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
+            )
+            notification?.contentView?.setImageViewResource(
+                R.id.media_play,
+                if (service.isPlaying()) R.drawable.ics_player_nf_pause else R.drawable.ics_player_nf_play
+            )
         }
     }
 }

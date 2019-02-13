@@ -557,4 +557,12 @@ internal class MediaService : Service(), Controls {
     override fun playlist(): ArrayList<MediaInfo>? {
         return mediaSource?.getMediaInfos()
     }
+
+    override fun isNavigationEnabled(): Boolean {
+        return playerNotification.navigationEnable
+    }
+
+    override fun setNavigationEnable(enable: Boolean) {
+        playerNotification.navigationEnable = enable
+    }
 }
