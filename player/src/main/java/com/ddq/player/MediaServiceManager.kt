@@ -64,6 +64,10 @@ class MediaServiceManager private constructor(private val context: Context) : Br
             action(Runnable { instance!!.binder?.seekToWindow(position) })
         }
 
+        fun seekToWindow(position: Int, ms: Long) {
+            action(Runnable { instance!!.binder?.seekToWindow(position, ms) })
+        }
+
         fun playOrPause() {
             action(Runnable { instance!!.binder?.playOrPause() })
         }

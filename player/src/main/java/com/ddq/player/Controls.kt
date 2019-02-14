@@ -16,6 +16,7 @@ interface Controls {
     fun prepare(intent: Intent?)
     fun prepare(medias: List<MediaInfo>?)
     fun seekToWindow(position: Int)
+    fun seekToWindow(position: Int, ms: Long)
     fun playOrPause()
     fun nextPlayMode()
     fun seekTo(percent: Int)

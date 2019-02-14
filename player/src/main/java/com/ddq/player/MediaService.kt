@@ -64,6 +64,7 @@ internal class MediaService : Service(), Controls {
     private val handler = Handler()
     private val cmder = Cmder(this)
     private val bufferDispatcher = Runnable {
+        Log.d("MediaService", "start dispatch buffering")
         val intent = Intent(Commands.ACTION_BUFFERING)
         buffering = true
         intent.putExtra("buffering", buffering)
@@ -258,7 +259,7 @@ internal class MediaService : Service(), Controls {
             if (playlist != null) {
                 intent.putExtra("medias", playlist)
                 intent.putExtra("data", getCurrentMedia())
-                intent.putExtra("position", position())
+                intent.putExtra("contentPosition", position())
             }
         }
         sendBroadcast(intent)
@@ -403,6 +404,10 @@ internal class MediaService : Service(), Controls {
 
     override fun seekToWindow(position: Int) {
         player.seekToDefaultPosition(position)
+    }
+
+    override fun seekToWindow(position: Int, ms: Long) {
+        player.seekTo(position, ms)
     }
 
     fun pause() {

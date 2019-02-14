@@ -58,6 +58,9 @@ internal class ServiceBinder(private val mediaService: MediaService) : Binder(),
         mediaService.seekToWindow(position)
     }
 
+    override fun seekToWindow(position: Int, ms: Long) {
+        mediaService.seekToWindow(position, ms)
+    }
     override fun playOrPause() {
         mediaService.playOrPause()
     }
