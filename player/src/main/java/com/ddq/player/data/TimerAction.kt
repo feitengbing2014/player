@@ -10,14 +10,23 @@ import java.util.*
 data class TimerAction(
     val fire: Long,
     val action: String
-) : Serializable
+) : Serializable, Comparable<TimerAction> {
+    override fun compareTo(other: TimerAction): Int {
+        if (fire < other.fire)
+            return -1
+        else if (fire > other.fire)
+            return 1
+        return 0
+    }
+}
 
 fun List<TimerAction>.toPendingActions(): Queue<Intent> {
     val list = LinkedList<Intent>()
-    forEach {
+    sortedDescending().forEach {
         val intent = Intent(it.action)
         intent.putExtra("fire", it.fire)
         list.add(intent)
     }
+
     return list
 }

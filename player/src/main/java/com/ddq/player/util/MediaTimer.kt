@@ -1,6 +1,7 @@
 package com.ddq.player.util
 
 import android.content.Intent
+import android.util.Log
 import com.ddq.player.Commands
 import com.ddq.player.MediaService
 import com.ddq.player.data.CountTime.Companion.TYPE_CURRENT
@@ -21,7 +22,7 @@ internal class MediaTimer(
     override
     fun onTick(millisUntilFinished: Long) {
         if (pending != null && pending.size > 0) {
-            val fireTime = pending.peek().getIntExtra("fire", 0).toLong()
+            val fireTime = pending.peek().getLongExtra("fire", 0)
 
             if (fireTime >= millisUntilFinished) {
                 sendBroadcast(pending.poll())
