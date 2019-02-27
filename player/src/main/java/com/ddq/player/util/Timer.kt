@@ -38,7 +38,7 @@ abstract class Timer(millisInFuture: Long, countDownInterval: Long) {
     }
 
     @Synchronized
-    fun pause() {
+    open fun pause() {
         mPaused = true
         mHandler.removeMessages(MSG)
     }

@@ -272,6 +272,10 @@ internal class MediaService : Service(), Controls {
 
     override fun cancelTimer() {
         timer?.cancel()
+        releaseTimer()
+    }
+
+    fun releaseTimer() {
         timer = null
     }
 
@@ -415,7 +419,7 @@ internal class MediaService : Service(), Controls {
     }
 
     override fun playOrPause() {
-
+        Log.d("MediaService", "playOrPause")
         /**
          * 由于数据错误或者网络错误导致播放器进入停止状态，这时候必须重新prepare
          */

@@ -1,7 +1,6 @@
 package com.ddq.player.util
 
 import android.content.Intent
-import android.util.Log
 import com.ddq.player.Commands
 import com.ddq.player.MediaService
 import com.ddq.player.data.CountTime.Companion.TYPE_CURRENT
@@ -32,6 +31,11 @@ internal class MediaTimer(
         sendCountBroadcast(millisUntilFinished)
     }
 
+    override fun pause() {
+        super.pause()
+        sendCountBroadcast(mMillisInFuture)
+    }
+
     override fun cancel() {
         super.cancel()
         sendBroadcast(Intent(Commands.ACTION_COUNT_CANCEL))
@@ -40,6 +44,7 @@ internal class MediaTimer(
     override fun onFinish() {
         sendCountBroadcast(0)
         service.pause()
+        service.releaseTimer()
     }
 
     private fun sendCountBroadcast(left: Long) {
