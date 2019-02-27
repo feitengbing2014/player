@@ -2,6 +2,7 @@ package com.ddq.player
 
 import android.content.Intent
 import android.os.Binder
+import android.os.Bundle
 import com.ddq.player.data.MediaInfo
 import com.ddq.player.util.ProgressChanged
 
@@ -34,8 +35,8 @@ internal class ServiceBinder(private val mediaService: MediaService) : Binder(),
         mediaService.previous()
     }
 
-    override fun add(media: MediaInfo, index: Int) {
-        mediaService.add(media, index)
+    override fun add(bundle: Bundle) {
+        mediaService.add(bundle)
     }
 
     override fun remove(index: Int) {
@@ -61,6 +62,7 @@ internal class ServiceBinder(private val mediaService: MediaService) : Binder(),
     override fun seekToWindow(position: Int, ms: Long) {
         mediaService.seekToWindow(position, ms)
     }
+
     override fun playOrPause() {
         mediaService.playOrPause()
     }

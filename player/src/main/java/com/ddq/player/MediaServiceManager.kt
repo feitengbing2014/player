@@ -3,6 +3,7 @@ package com.ddq.player
 import android.arch.lifecycle.GenericLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.content.*
+import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
@@ -49,7 +50,17 @@ class MediaServiceManager private constructor(private val context: Context) : Br
         }
 
         fun add(mediaInfo: MediaInfo, index: Int) {
-            action(Runnable { instance!!.binder?.add(mediaInfo, index) })
+            add(mediaInfo, index, false, 0)
+        }
+
+        fun add(mediaInfo: MediaInfo, index: Int, seek: Boolean, position: Long) {
+            val bundle = Bundle().apply {
+                putParcelable("media", mediaInfo)
+                putInt("index", index)
+                putBoolean("seek", seek)
+                putLong("position", position)
+            }
+            action(Runnable { instance!!.binder?.add(bundle) })
         }
 
         fun remove(mediaInfo: MediaInfo) {

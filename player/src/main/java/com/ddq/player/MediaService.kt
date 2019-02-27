@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
+import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.util.Log
@@ -336,13 +337,24 @@ internal class MediaService : Service(), Controls {
         player.playWhenReady = true
     }
 
-    override fun add(media: MediaInfo, index: Int) {
+    override fun add(bundle: Bundle) {
+        val media = bundle.getParcelable("media") as MediaInfo
+        val index = bundle.getInt("index", -1)
+        val seek = bundle.getBoolean("seek")
+        val position = bundle.getLong("position",0)
+
         if (mediaSource == null) {
             prepare(arrayListOf(media))
+            if (seek)
+                player.seekTo(position)
             return
         }
 
-        mediaSource?.addMediaSource(index, media.toMediaSource(dataSourceFactory)) {
+        mediaSource?.addMediaSource(if (index == -1) mediaSource!!.size else index, media.toMediaSource(dataSourceFactory)) {
+
+            if (seek)
+                seekToWindow(index, position)
+
             val intent = Intent(Commands.ACTION_ITEM_ADDED)
             intent.putExtra("media", media)
             sendBroadcast(intent)
