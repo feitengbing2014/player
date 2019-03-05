@@ -341,7 +341,7 @@ internal class MediaService : Service(), Controls {
         val media = bundle.getParcelable("media") as MediaInfo
         val index = bundle.getInt("index", -1)
         val seek = bundle.getBoolean("seek")
-        val position = bundle.getLong("position",0)
+        val position = bundle.getLong("position", 0)
 
         if (mediaSource == null) {
             prepare(arrayListOf(media))
@@ -350,7 +350,10 @@ internal class MediaService : Service(), Controls {
             return
         }
 
-        mediaSource?.addMediaSource(if (index == -1) mediaSource!!.size else index, media.toMediaSource(dataSourceFactory)) {
+        mediaSource?.addMediaSource(
+            if (index == -1) mediaSource!!.size else index,
+            media.toMediaSource(dataSourceFactory)
+        ) {
 
             if (seek)
                 seekToWindow(index, position)
@@ -602,6 +605,7 @@ internal class MediaService : Service(), Controls {
             val intent = Intent()
             intent.setPackage(packageName)
             intent.component = ComponentName(this, lockScreenTarget!!)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
         }
     }
